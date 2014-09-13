@@ -8,7 +8,7 @@ class FlamingoMainWindow;
 class FlamingoCore : public QApplication {
     Q_OBJECT
 public:
-    FlamingoCore(int &argc, char **argv);
+    FlamingoCore(int &argc, char **&argv);
 private: //Widgets
     FlamingoMainWindow *windowMain = nullptr;
 };

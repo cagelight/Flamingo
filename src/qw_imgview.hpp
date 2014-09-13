@@ -18,10 +18,10 @@ public:
     void mouseReleaseEvent(QMouseEvent *);
     void mouseMoveEvent(QMouseEvent *);
 public slots:
-    void setImage(QImage);
-    void setImage(QPixmap);
+    void setImage(const QImage&);
+    void setImage(const QPixmap&);
 private slots:
-    void bilinearRaster();
+    void bilinearRaster(bool forceZoomed = false);
     void bilinearRasterDelayed();
 private: //Variables
     QPixmap view;

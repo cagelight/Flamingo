@@ -7,6 +7,7 @@ QImageView::QImageView(QWidget *parent, QPixmap image) : QWidget(parent), view(i
 }
 
 QSize QImageView::sizeHint() const {
+    //return view.size().scaled(QSize(400, 300), Qt::KeepAspectRatioByExpanding);
     return view.size();
 }
 
@@ -35,7 +36,6 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
             paint.drawPixmap(drawRect, view2);
         }
     }
-    qDebug() << "Repainted.";
 }
 
 void QImageView::resizeEvent(QResizeEvent *) {
@@ -49,7 +49,6 @@ void QImageView::wheelEvent(QWheelEvent *QWE) {
     zoom *= (1.0f - QWE->delta() / 360.0f / 1.5f);
     if (zoom < zoomMin) zoom = zoomMin;
     if (zoom > zoomMax) zoom = zoomMax;
-    qDebug() << zoom;
     if (zoom != zoomOld) {
         keepFit = false;
         this->repaint();
@@ -89,16 +88,18 @@ void QImageView::mouseMoveEvent(QMouseEvent *QME) {
     }
 }
 
-void QImageView::setImage(QImage newView) {
+void QImageView::setImage(const QImage &newView) {
     this->view = QPixmap::fromImage(newView);
+    this->bilinearRaster(true);
 }
 
-void QImageView::setImage(QPixmap newView) {
+void QImageView::setImage(const QPixmap &newView) {
     this->view = newView;
+    this->bilinearRaster(true);
 }
 
-void QImageView::bilinearRaster() {
-    if (zoom > 1.0f) {
+void QImageView::bilinearRaster(bool forceZoomed) {
+    if (zoom > 1.0f || forceZoomed) {
         fastRaster = false;
         this->repaint();
         fastRaster = true;
