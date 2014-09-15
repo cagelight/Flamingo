@@ -37,8 +37,9 @@ private: //Variables
     QPoint prevMPos;
     bool mouseMoving = false;
     bool paintCompletePartial = false;
+    QPointF focalPoint;
 private: //Methods
-    void setZoom(qreal);
+    void setZoom(qreal, QPointF focus = QPointF(0, 0));
     void calculateMax();
     void calculateView();
 

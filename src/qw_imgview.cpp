@@ -47,9 +47,7 @@ void QImageView::resizeEvent(QResizeEvent *) {
 
 void QImageView::wheelEvent(QWheelEvent *QWE) {
     QWE->accept();
-    float nZoom = (1.0f - QWE->delta() / 360.0f / 1.5f) * zoom;
-    this->viewOffset.rx() += QWE->pos().x() * nZoom;
-    this->setZoom((1.0f - QWE->delta() / 360.0f / 1.5f) * zoom);
+    this->setZoom((1.0f - QWE->delta() / 360.0f / 1.5f) * zoom, QPointF(QWE->pos().x() / (float)this->width() , QWE->pos().y() / (float)this->height()));
 }
 
 void QImageView::mousePressEvent(QMouseEvent *QME) {
@@ -58,7 +56,7 @@ void QImageView::mousePressEvent(QMouseEvent *QME) {
         this->prevMPos = QME->pos();
     }
     if (QME->button() == Qt::MiddleButton) {
-        this->setZoom(1.0f);
+        this->setZoom(1.0f, QPointF(QME->pos().x() / (float)this->width() , QME->pos().y() / (float)this->height()));
     }
 }
 
@@ -112,10 +110,14 @@ void QImageView::bilinearRasterDelayed() {
     }
 }
 
-void QImageView::setZoom(qreal nZoom) {
+void QImageView::setZoom(qreal nZoom, QPointF focus) {
     if (nZoom < zoomMin) nZoom = zoomMin;
     if (nZoom > zoomMax) nZoom = zoomMax;
     if (zoom != nZoom) {
+        float xmod = ((this->size() * zoom).width() - (this->size() * nZoom).width()) * focus.x();
+        float ymod = ((this->size() * zoom).height() - (this->size() * nZoom).height()) * focus.y();
+        this->viewOffset.rx() += xmod;
+        this->viewOffset.ry() += ymod;
         zoom = nZoom;
         keepFit = false;
         this->repaint();
@@ -163,5 +165,4 @@ void QImageView::calculateView() {
         viewOffset.setY(0);
     }
     partRect = QRect(viewOffset.toPoint(), partSize);
-
 }
