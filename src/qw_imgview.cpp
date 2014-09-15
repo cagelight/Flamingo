@@ -17,7 +17,9 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
     if (this->width() > 0 && this->height() > 0 && view.width() > 0 && view.height() > 0) {
         this->calculateView();
         QSize drawSize;
-        if (partRect.width() < this->width() && partRect.height() < this->height() && (zoom >= 1.0f || zoom == zoomMax)) {
+        if (paintCompletePartial) {
+            drawSize = partRect.size().scaled(this->size(), Qt::IgnoreAspectRatio);
+        } else if (partRect.width() < this->width() && partRect.height() < this->height() && (zoom >= 1.0f || zoom == zoomMax)) {
             drawSize = partRect.size();
         } else {
             drawSize = partRect.size().scaled(this->size(), Qt::KeepAspectRatio);
@@ -45,25 +47,18 @@ void QImageView::resizeEvent(QResizeEvent *) {
 
 void QImageView::wheelEvent(QWheelEvent *QWE) {
     QWE->accept();
-    float zoomOld = zoom;
-    zoom *= (1.0f - QWE->delta() / 360.0f / 1.5f);
-    if (zoom < zoomMin) zoom = zoomMin;
-    if (zoom > zoomMax) zoom = zoomMax;
-    if (zoom != zoomOld) {
-        keepFit = false;
-        this->repaint();
-        this->bilinearRasterDelayed();
-    } else if (keepFit == false && zoom == zoomOld && zoom != zoomMin) {
-        keepFit = true;
-        this->repaint();
-        this->bilinearRasterDelayed();
-    }
+    float nZoom = (1.0f - QWE->delta() / 360.0f / 1.5f) * zoom;
+    this->viewOffset.rx() += QWE->pos().x() * nZoom;
+    this->setZoom((1.0f - QWE->delta() / 360.0f / 1.5f) * zoom);
 }
 
 void QImageView::mousePressEvent(QMouseEvent *QME) {
     if (QME->button() == Qt::LeftButton) {
         this->mouseMoving = true;
         this->prevMPos = QME->pos();
+    }
+    if (QME->button() == Qt::MiddleButton) {
+        this->setZoom(1.0f);
     }
 }
 
@@ -90,16 +85,18 @@ void QImageView::mouseMoveEvent(QMouseEvent *QME) {
 
 void QImageView::setImage(const QImage &newView) {
     this->view = QPixmap::fromImage(newView);
+    this->keepFit = true;
     this->bilinearRaster(true);
 }
 
 void QImageView::setImage(const QPixmap &newView) {
     this->view = newView;
+    this->keepFit = true;
     this->bilinearRaster(true);
 }
 
 void QImageView::bilinearRaster(bool forceZoomed) {
-    if (zoom > 1.0f || forceZoomed) {
+    if (zoom != 1.0f || forceZoomed) {
         fastRaster = false;
         this->repaint();
         fastRaster = true;
@@ -112,6 +109,21 @@ void QImageView::bilinearRasterDelayed() {
         rasterTimer.start(this->bilinearRasterWaitMsec);
     } else {
         rasterTimer.start(this->bilinearRasterWaitMsec);
+    }
+}
+
+void QImageView::setZoom(qreal nZoom) {
+    if (nZoom < zoomMin) nZoom = zoomMin;
+    if (nZoom > zoomMax) nZoom = zoomMax;
+    if (zoom != nZoom) {
+        zoom = nZoom;
+        keepFit = false;
+        this->repaint();
+        this->bilinearRasterDelayed();
+    } else if (keepFit == false && zoom == nZoom && zoom != zoomMin) {
+        keepFit = true;
+        this->repaint();
+        this->bilinearRasterDelayed();
     }
 }
 
@@ -128,11 +140,14 @@ void QImageView::calculateView() {
         this->viewOffset = QPointF(0, 0);
     }
     QSize partSize = this->size() * zoom;
+    this->paintCompletePartial = true;
     if (partSize.width() > view.width()) {
         partSize.setWidth(view.width());
+        this->paintCompletePartial = false;
     }
     if (partSize.height() > view.height()) {
         partSize.setHeight(view.height());
+        this->paintCompletePartial = false;
     }
     if (partSize == view.size()) keepFit = true;
     if (viewOffset.x() > this->view.width() - partSize.width()) {

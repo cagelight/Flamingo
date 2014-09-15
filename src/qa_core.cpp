@@ -1,6 +1,8 @@
 #include "qa_core.hpp"
 #include "qw_mainwindow.hpp"
 
+#include <QDir>
+
 FlamingoCore::FlamingoCore(int &argc, char **&argv): QApplication(argc, argv) {
     if (argc > 1) {
         QFileInfoList qfil;

@@ -36,9 +36,12 @@ private: //Variables
     QPointF viewOffset = QPointF(0, 0);
     QPoint prevMPos;
     bool mouseMoving = false;
+    bool paintCompletePartial = false;
 private: //Methods
+    void setZoom(qreal);
     void calculateMax();
     void calculateView();
+
 };
 
 #endif // QW_IMGVIEW_HPP

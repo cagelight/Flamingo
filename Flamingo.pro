@@ -11,12 +11,15 @@ SOURCES += \
     src/main.cpp \
     src/qw_mainwindow.cpp \
     src/qa_core.cpp \
-    src/qw_imgview.cpp
+    src/qw_imgview.cpp \
+    src/qw_flamingoview.cpp
 
 HEADERS  += \
     src/qw_mainwindow.hpp \
     src/qa_core.hpp \
-    src/qw_imgview.hpp
+    src/qw_imgview.hpp \
+    src/qw_flamingoview.hpp \
+    src/qreversiblelistiterator.hpp
 
 Release:DESTDIR = release
 Release:OBJECTS_DIR = release/.obj
