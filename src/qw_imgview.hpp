@@ -22,12 +22,11 @@ public slots:
     void setImage(const QPixmap&);
 private slots:
     void bilinearRaster(bool forceZoomed = false);
-    void bilinearRasterDelayed();
+    void bilinearRasterDelayed(int msec = 150);
 private: //Variables
     QPixmap view;
     bool fastRaster = true;
     QTimer rasterTimer;
-    int bilinearRasterWaitMsec = 100;
     float zoom = 1.0f;
     QRect partRect;
     float zoomMin = 0.025f;

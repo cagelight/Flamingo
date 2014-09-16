@@ -1,19 +1,31 @@
 #ifndef QO_FLAMINGOVIEWMGR_HPP
 #define QO_FLAMINGOVIEWMGR_HPP
 
+#include <memory>
+
 #include <QWidget>
 #include <QFileInfo>
 #include <QDir>
+#include <QImageReader>
+
 #include "qw_imgview.hpp"
+#include "qo_imageondemand.hpp"
 
 typedef QList<QDir> QDirList;
 
-class QTrackedFile : public QFileInfo {
+class QTrackedImage : public QObject {
+    Q_OBJECT
 public:
-    QTrackedFile(const QFileInfo &fi, bool trackedDir) : QFileInfo(fi), trackedDir(trackedDir) {}
-    QTrackedFile() : QFileInfo(), trackedDir(false) {}
+    QTrackedImage(const QFileInfo &fi, bool trackedDir) : info(new QFileInfo(fi)), iread(new QPreloadableImage(fi.canonicalFilePath())), trackedDir(trackedDir) {}
+    //QTrackedImage() : info(), iread(), trackedDir(false) {}
+    const QFileInfo* Info() {return info.get();}
     bool isTracked() {return trackedDir;}
+    bool canRead() {return (this->Info()->exists() && iread->isReadable());}
+    void beginRead() {return iread->beginRead();}
+    QImage getImage() {return iread->getImage();}
 private:
+    std::shared_ptr<QFileInfo> info;
+    std::shared_ptr<QPreloadableImage> iread;
     bool trackedDir;
 };
 
@@ -27,11 +39,12 @@ public slots:
 private: //Variables
     QDirList imgDirs;
     QFileInfoList imgFiles;
-    QTrackedFile imgCur;
+    QTrackedImage *imgCur = nullptr;
+    QTrackedImage *imgNext = nullptr;
+    QTrackedImage *imgPrev = nullptr;
 private: //Image File Management
     enum INFONAV {NEXT, NEXT_FILE, NEXT_DIR_FILE, RESET_DIR, NEXT_DIR, FORCE_FILE, FORCE_DIR, RESET};
-    void advanceImage(INFONAV method, bool reverse = false);
-    bool setCurrent(QTrackedFile);
+    QTrackedImage* advanceImage(const QTrackedImage* begin, INFONAV method, bool reverse = false);
     void setImageCurrent();
 };
 

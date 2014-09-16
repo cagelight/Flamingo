@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QFileInfo>
 class QGridLayout;
+class QProgressBar;
 class QFlamingoView;
 
 class FlamingoMainWindow : public QWidget {
@@ -18,6 +19,7 @@ private: //Widgets
     FlamingoMainWindow();
     QGridLayout *layoutMain = nullptr;
     QFlamingoView *fview = nullptr;
+    QProgressBar *iprogbar = nullptr;
 };
 
 #endif // QWIDGET_MAINWINDOW_HPP

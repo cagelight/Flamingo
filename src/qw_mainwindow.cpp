@@ -4,14 +4,16 @@
 
 FlamingoMainWindow::FlamingoMainWindow(QFileInfoList infos) : FlamingoMainWindow() {
     fview = new QFlamingoView(infos, this);
-    layoutMain->addWidget(fview);
+    layoutMain->addWidget(fview, 0, 0);
 }
 
 FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     this->setMinimumSize(400, 300);
     //Initialization
     layoutMain = new QGridLayout(this);
+    iprogbar = new QProgressBar(this);
     //Layouting
+    layoutMain->addWidget(iprogbar, 1, 0);
     layoutMain->setMargin(0);
 }
 

@@ -25,32 +25,45 @@ QFlamingoView::QFlamingoView(QFileInfoList fi, QWidget *parent) : QImageView(par
                 imgDirs.append(QDir(info.canonicalFilePath()));
             } else {
                 imgDirs.append(info.dir());
-                if (QImageReader(info.canonicalFilePath()).canRead() && setCurrent(QTrackedFile(info, true))) {
-                    this->setImageCurrent();
+                QTrackedImage *nFile = new QTrackedImage(info, true);
+                if (nFile->canRead()) {
+                    this->imgCur = nFile;
                     return;
-                }
+                } else delete nFile;
             }
         }
     }
     if (imgDirs.length() == 0 && imgFiles.length() == 0) {
         imgDirs.append(QDir::current());
     }
-    this->advanceImage(RESET);
+    if (imgCur == nullptr) imgCur = this->advanceImage(imgCur, RESET);
+    imgNext = this->advanceImage(imgCur, NEXT);
+    imgPrev = this->advanceImage(imgCur, NEXT, true);
     this->setImageCurrent();
 }
 
 void QFlamingoView::Next() {
-    this->advanceImage(NEXT);
+    qDebug() << imgPrev->Info()->canonicalFilePath() << imgCur->Info()->canonicalFilePath() << imgNext->Info()->canonicalFilePath();
+    imgPrev = imgCur;
+    imgCur = imgNext;
+    delete imgNext;
+    imgNext = this->advanceImage(imgCur, NEXT);
+    imgNext->beginRead();
     this->setImageCurrent();
 }
 
 void QFlamingoView::Prev() {
-    this->advanceImage(NEXT, true);
+    imgNext = imgCur;
+    imgCur = imgPrev;
+    delete imgPrev;
+    imgPrev = this->advanceImage(imgCur, NEXT);
+    imgPrev->beginRead();
     this->setImageCurrent();
 }
 
 
-void QFlamingoView::advanceImage(INFONAV method, bool reverse) {
+QTrackedImage* QFlamingoView::advanceImage(const QTrackedImage *begin, INFONAV method, bool reverse) {
+    qDebug() << method;
     //ENUM HIERARCHY
     //NEXT
     //-NEXT_FILE
@@ -69,66 +82,61 @@ void QFlamingoView::advanceImage(INFONAV method, bool reverse) {
     bool matchFlag = false;
     switch (method) {
     case NEXT:
-        if (imgCur.isTracked()) advanceImage(NEXT_DIR_FILE, reverse); else advanceImage(NEXT_FILE, reverse);
+        if (imgCur->isTracked()) return advanceImage(begin, NEXT_DIR_FILE, reverse); else return advanceImage(begin, NEXT_FILE, reverse);
         break;
     case NEXT_FILE:
         if (imgFiles.length() > 0) {
             QReversibleMutableListIterator<QFileInfo> fiter(imgFiles, reverse);
             while(fiter.canAdvance()) {
                 QFileInfo &fcur = fiter.advance();
-                if (fcur == imgCur) {
+                if (fcur.canonicalFilePath() == imgCur->Info()->canonicalFilePath()) {
                     if (fiter.canAdvance()) {
-                        QTrackedFile nFile = QTrackedFile(fiter.peekAdvance(), false);
-                        if (!setCurrent(nFile)) {
+                        QTrackedImage *nFile = new QTrackedImage(fiter.peekAdvance(), false);
+                        if (!nFile->canRead()) {
+                            delete nFile;
                             fiter.remove();
-                            advanceImage(NEXT_FILE, reverse);
-                            return;
-                        } else return;
+                            return advanceImage(begin, NEXT_FILE, reverse);
+                        } else return nFile;
                     } else {
-                        advanceImage(FORCE_DIR, reverse);
-                        return;
+                        return advanceImage(begin, FORCE_DIR, reverse);
                     }
                 }
             }
-            imgFiles.removeAll(imgCur);
-            advanceImage(RESET, reverse);
-            return;
+            imgFiles.removeAll(*(imgCur->Info()));
+            return advanceImage(begin, RESET, reverse);
         } else {
-            advanceImage(FORCE_DIR, reverse);
-            return;
+            return advanceImage(begin, FORCE_DIR, reverse);
         }
         break;
     case NEXT_DIR_FILE:
-        if (imgCur.dir().exists()) {
-            QFileInfoList qfil = imgCur.dir().entryInfoList(QDir::Files);
+        if (imgCur->Info()->dir().exists()) {
+            QFileInfoList qfil = imgCur->Info()->dir().entryInfoList(QDir::Files);
             QReversibleListIterator<QFileInfo> fiter(qfil, reverse);
             while(fiter.canAdvance()) {
                 const QFileInfo &fcur = fiter.advance();
-                if (fcur == imgCur) {matchFlag = true; continue;}
+                if (fcur.canonicalFilePath() == imgCur->Info()->canonicalFilePath()) {matchFlag = true; continue;}
                 if (matchFlag) {
-                    if (setCurrent(QTrackedFile(fcur, true))) return;
+                    QTrackedImage *nFile = new QTrackedImage(fcur, true);
+                    if (nFile->canRead()) return nFile; else delete nFile;
                 }
             }
-            advanceImage(RESET_DIR, reverse);
-            return;
+            return advanceImage(begin, RESET_DIR, reverse);
         } else {
-            imgDirs.removeAll(imgCur.dir());
-            advanceImage(NEXT_DIR, reverse);
-            return;
+            imgDirs.removeAll(imgCur->Info()->dir());
+            return advanceImage(begin, NEXT_DIR, reverse);
         }
         break;
     case RESET_DIR:
-        if (imgCur.dir().exists()) {
-            QFileInfoList qfil = imgCur.dir().entryInfoList(QDir::Files);
+        if (imgCur->Info()->dir().exists()) {
+            QFileInfoList qfil = imgCur->Info()->dir().entryInfoList(QDir::Files);
             QReversibleListIterator<QFileInfo> fiter(qfil, reverse);
             while(fiter.canAdvance()) {
-                if (setCurrent(QTrackedFile(fiter.advance(), true))) return;
+                QTrackedImage *nFile = new QTrackedImage(fiter.advance(), true);
+                if (nFile->canRead()) return nFile; else delete nFile;
             }
-            advanceImage(NEXT_DIR, reverse);
-            return;
+            return advanceImage(begin, NEXT_DIR, reverse);
         }
-        advanceImage(NEXT_DIR, reverse);
-        return;
+        return advanceImage(begin, NEXT_DIR, reverse);
         break;
     case NEXT_DIR:
         if (imgDirs.length() > 0) {
@@ -136,41 +144,41 @@ void QFlamingoView::advanceImage(INFONAV method, bool reverse) {
             while(diter.canAdvance()) {
                 QDir &dir = diter.advance();
                 if (dir.exists()) {
-                    if (dir == imgCur.dir()) {matchFlag = true; continue;}
+                    if (dir == imgCur->Info()->dir()) {matchFlag = true; continue;}
                     if (matchFlag) {
                         QFileInfoList qfil = dir.entryInfoList(QDir::Files);
                         QReversibleListIterator<QFileInfo> fiter(qfil, reverse);
                         while(fiter.canAdvance()) {
-                            if (!setCurrent(QTrackedFile(fiter.advance(), true))) {
+                            QTrackedImage *nFile = new QTrackedImage(fiter.advance(), true);
+                            if (!nFile->canRead()) {
+                                delete nFile;
                                 continue;
-                            } else return;
+                            } else return nFile;
                         }
                     }
                 } else {
                     diter.remove();
                 }
             }
-            advanceImage(FORCE_FILE, reverse);
-            return;
+            return advanceImage(begin, FORCE_FILE, reverse);
         } else {
-            advanceImage(FORCE_FILE, reverse);
-            return;
+            return advanceImage(begin, FORCE_FILE, reverse);
         }
         break;
     case FORCE_FILE:
         if (imgFiles.length() > 0) {
             QReversibleMutableListIterator<QFileInfo> fiter(imgFiles, reverse);
             while (fiter.canAdvance()) {
-                if (!setCurrent(QTrackedFile(fiter.advance(), false))) {
+                QTrackedImage *nFile = new QTrackedImage(fiter.advance(), false);
+                if (!nFile->canRead()) {
+                    delete nFile;
                     fiter.remove();
                     continue;
-                } else return;
+                } else return nFile;
             }
-            advanceImage(RESET, reverse);
-            return;
+            return advanceImage(begin, RESET, reverse);
         } else {
-            advanceImage(RESET, reverse);
-            return;
+            return advanceImage(begin, RESET, reverse);
         }
         break;
     case FORCE_DIR:
@@ -182,19 +190,19 @@ void QFlamingoView::advanceImage(INFONAV method, bool reverse) {
                     QFileInfoList qfil = dir.entryInfoList(QDir::Files);
                     QReversibleListIterator<QFileInfo> fiter(qfil, reverse);
                     while(fiter.canAdvance()) {
-                        if (!setCurrent(QTrackedFile(fiter.advance(), true))) {
+                        QTrackedImage *nFile = new QTrackedImage(fiter.advance(), true);
+                        if (!nFile->canRead()) {
+                            delete nFile;
                             continue;
-                        } else return;
+                        } else return nFile;
                     }
                 } else {
                     diter.remove();
                 }
             }
-            advanceImage(RESET, reverse);
-            return;
+            return advanceImage(begin, RESET, reverse);
         } else {
-            advanceImage(RESET, reverse);
-            return;
+            return advanceImage(begin, RESET, reverse);
         }
         break;
     case RESET:
@@ -203,10 +211,12 @@ void QFlamingoView::advanceImage(INFONAV method, bool reverse) {
         if (imgFiles.length() > 0) {
             QReversibleMutableListIterator<QFileInfo> fiter(imgFiles, reverse);
             while(fiter.canAdvance()) {
-                if (!setCurrent(QTrackedFile(fiter.advance(), false))) {
+                QTrackedImage *nFile = new QTrackedImage(fiter.advance(), false);
+                if (!nFile->canRead()) {
+                    delete nFile;
                     fiter.remove();
                     continue;
-                } else return;
+                } else return nFile;
             }
         }
         if (reverse) goto fail; else goto dirs;
@@ -219,9 +229,11 @@ void QFlamingoView::advanceImage(INFONAV method, bool reverse) {
                     QFileInfoList qfil = dir.entryInfoList(QDir::Files);
                     QReversibleListIterator<QFileInfo> fiter(qfil, reverse);
                     while(fiter.canAdvance()) {
-                        if (!setCurrent(QTrackedFile(fiter.advance(), true))) {
+                        QTrackedImage *nFile = new QTrackedImage(fiter.advance(), true);
+                        if (!nFile->canRead()) {
+                            delete nFile;
                             continue;
-                        } else return;
+                        } else return nFile;
                     }
                 } else {
                     diter.remove();
@@ -231,20 +243,11 @@ void QFlamingoView::advanceImage(INFONAV method, bool reverse) {
         if (reverse) goto files; else goto fail;
         fail:
         //No files explicitly set, and no files in the dirs detected (or no dirs explicitly set): make blank.
-        imgCur = QTrackedFile();
-        this->setImage(QImage(0, 0));
+        return nullptr;
         break;
     }
 }
 
-bool QFlamingoView::setCurrent(QTrackedFile f) {
-    if (f.exists() && QImageReader(f.canonicalFilePath()).canRead()) {
-        imgCur = f;
-        return true;
-    }
-    return false;
-}
-
 void QFlamingoView::setImageCurrent() {
-    this->setImage(QImage(imgCur.canonicalFilePath()));
+    this->setImage(imgCur->getImage());
 }

@@ -84,13 +84,15 @@ void QImageView::mouseMoveEvent(QMouseEvent *QME) {
 void QImageView::setImage(const QImage &newView) {
     this->view = QPixmap::fromImage(newView);
     this->keepFit = true;
-    this->bilinearRaster(true);
+    this->repaint();
+    //this->bilinearRaster(true);
 }
 
 void QImageView::setImage(const QPixmap &newView) {
     this->view = newView;
     this->keepFit = true;
-    this->bilinearRaster(true);
+    this->repaint();
+    //this->bilinearRaster(true);
 }
 
 void QImageView::bilinearRaster(bool forceZoomed) {
@@ -101,12 +103,12 @@ void QImageView::bilinearRaster(bool forceZoomed) {
     }
 }
 
-void QImageView::bilinearRasterDelayed() {
+void QImageView::bilinearRasterDelayed(int msec) {
     if (rasterTimer.isActive()) {
         rasterTimer.stop();
-        rasterTimer.start(this->bilinearRasterWaitMsec);
+        rasterTimer.start(msec);
     } else {
-        rasterTimer.start(this->bilinearRasterWaitMsec);
+        rasterTimer.start(msec);
     }
 }
 
