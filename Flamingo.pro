@@ -13,7 +13,7 @@ SOURCES += \
     src/qa_core.cpp \
     src/qw_imgview.cpp \
     src/qw_flamingoview.cpp \
-    src/qo_imageondemand.cpp
+    src/qo_hotloadimage.cpp
 
 HEADERS  += \
     src/qw_mainwindow.hpp \
@@ -21,7 +21,7 @@ HEADERS  += \
     src/qw_imgview.hpp \
     src/qw_flamingoview.hpp \
     src/qreversiblelistiterator.hpp \
-    src/qo_imageondemand.hpp
+    src/qo_hotloadimage.hpp
 
 Release:DESTDIR = release
 Release:OBJECTS_DIR = release/.obj

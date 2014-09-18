@@ -15,6 +15,9 @@ public: //Methods
     void keyPressEvent(QKeyEvent *);
 signals:
     void closed();
+private slots:
+    void setStatusBusy(QString);
+    void setStatusOK();
 private: //Widgets
     FlamingoMainWindow();
     QGridLayout *layoutMain = nullptr;

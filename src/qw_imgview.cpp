@@ -85,14 +85,14 @@ void QImageView::setImage(const QImage &newView) {
     this->view = QPixmap::fromImage(newView);
     this->keepFit = true;
     this->repaint();
-    //this->bilinearRaster(true);
+    this->bilinearRaster(true);
 }
 
 void QImageView::setImage(const QPixmap &newView) {
     this->view = newView;
     this->keepFit = true;
     this->repaint();
-    //this->bilinearRaster(true);
+    this->bilinearRaster(true);
 }
 
 void QImageView::bilinearRaster(bool forceZoomed) {
@@ -116,8 +116,17 @@ void QImageView::setZoom(qreal nZoom, QPointF focus) {
     if (nZoom < zoomMin) nZoom = zoomMin;
     if (nZoom > zoomMax) nZoom = zoomMax;
     if (zoom != nZoom) {
-        float xmod = ((this->size() * zoom).width() - (this->size() * nZoom).width()) * focus.x();
-        float ymod = ((this->size() * zoom).height() - (this->size() * nZoom).height()) * focus.y();
+        QSize sizeZ = this->size() * zoom;
+        QSize sizeNZ = this->size() * nZoom;
+        QSize sizeZV = this->view.size();
+        if (sizeZV.width() > sizeZ.width()) {
+            sizeZV.setWidth(sizeZ.width());
+        }
+        if (sizeZV.height() > sizeZ.height()) {
+            sizeZV.setHeight(sizeZ.height());
+        }
+        float xmod = (sizeZV.width() - sizeNZ.width()) * focus.x();
+        float ymod = (sizeZV.height() - sizeNZ.height()) * focus.y();
         this->viewOffset.rx() += xmod;
         this->viewOffset.ry() += ymod;
         zoom = nZoom;
