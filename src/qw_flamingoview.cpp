@@ -31,6 +31,7 @@ void QFlamingoView::Next() {
             return;
         }
         this->setImage(img);
+        emit ok();
     } else if (qhli->hasFailed()) {
         imgListIter->remove();
         this->Next();
@@ -50,6 +51,10 @@ void QFlamingoView::Prev() {
             return;
         }
         this->setImage(img);
+    } else if (qhli->hasFailed()) {
+        imgListIter->remove();
+        this->Prev();
+        return;
     } else emit busy(qhli->getName() + QString(" is loading..."));
     this->processLoads();
     return;
