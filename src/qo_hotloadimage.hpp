@@ -3,37 +3,80 @@
 
 #include <atomic>
 #include <mutex>
+#include <tuple>
 #include <thread>
 
 #include <QObject>
 #include <QImage>
-#include <QPixmap>
+#include <QList>
 #include <QFileInfo>
+#include <QThread>
 
-class QHotLoadImage : public QObject {
+typedef std::tuple<QImage, QFileInfo, bool> QFileImage;
+
+class QImageLoadThreadPool : public QObject{
     Q_OBJECT
 public:
-    QHotLoadImage(QFileInfo location, QObject *parent = 0);
-    QImage getImage();
-    QString getName() const {return info.fileName();}
-    bool imgAvailable() const;
-    bool hasFailed() const {return failState;}
-public slots:
-    void hotLoad();
-    void hotTryUnload();
-    void hotUnload();
+    QImageLoadThreadPool(QObject *parent = 0) : QObject(parent) {
+        QObject::connect(this, SIGNAL(loadComplete(QString,QImage)), this, SLOT(internalThreadEnd(QString,QImage)));
+    }
+    void takeControl() {controlExternal.lock();}
+    void releaseControl() {controlExternal.unlock();}
+    bool load(QString);
 signals:
-    void LoadComplete(QImage);
-    void LoadFailed();
+    void loadSuccess(QString, QImage);
+    void loadFailed(QString);
+    void loadComplete(QString, QImage);
+private slots:
+    void internalThreadEnd(QString, QImage);
 private:
-    void internalLoad();
-    void joinRead();
-    QFileInfo info;
-    std::thread *readThread = nullptr;
-    QImage *hotImage = nullptr;
-    bool failState = false;
-    QHotLoadImage(const QHotLoadImage&) = delete;
-    QHotLoadImage& operator=(const QHotLoadImage&) = delete;
+    void internalThreadRun(QString);
+    void internalJoinThread(QString);
+    std::thread *testThread = nullptr;
+    std::mutex controlExternal;
+    std::mutex controlInternal;
+};
+
+class QHotLoadImageBay : public QObject {
+    Q_OBJECT
+public:
+    QHotLoadImageBay();
+    void timerEvent(QTimerEvent*);
+    void add(QFileInfo);
+    QImage current();
+    QImage next();
+    QImage previous();
+signals:
+    void activeLoaded(QImage);
+    void activeFailed();
+private slots:
+    void handleSuccess(QString, QImage);
+    void handleFailure(QString);
+private:
+    QList<QFileImage> imgList;
+    int internalGetNextIndex(int jump = 0) {
+        if (imgList.length() > 0) {
+            int nindex = index + (1 + jump);
+            while (nindex >= imgList.length()) nindex -= imgList.length();
+            return nindex;
+        } else {
+            return 0;
+        }
+    }
+    int internalGetPreviousIndex(int jump = 0) {
+        if (imgList.length() > 0) {
+            int nindex = index - (1 + jump);
+            while (nindex < 0) nindex += imgList.length();
+            return nindex;
+        } else {
+            return 0;
+        }
+    }
+    void internalNext() {index = internalGetNextIndex();}
+    void internalPrevious() {index = internalGetPreviousIndex();}
+    void internalSettleIndex() {internalNext(); internalPrevious();}
+    int index = 0;
+    QImageLoadThreadPool qiltp;
 };
 
 #endif // QO_HOTLOADIMAGE_HPP

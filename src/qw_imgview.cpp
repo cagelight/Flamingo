@@ -85,14 +85,14 @@ void QImageView::setImage(const QImage &newView) {
     this->view = QPixmap::fromImage(newView);
     this->keepFit = true;
     this->repaint();
-    this->bilinearRaster(true);
+    //this->bilinearRaster(true);
 }
 
 void QImageView::setImage(const QPixmap &newView) {
     this->view = newView;
     this->keepFit = true;
     this->repaint();
-    this->bilinearRaster(true);
+    //this->bilinearRaster(true);
 }
 
 void QImageView::bilinearRaster(bool forceZoomed) {
