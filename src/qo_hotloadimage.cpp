@@ -64,12 +64,21 @@ void QHotLoadImageBay::timerEvent(QTimerEvent *) {
             nindicies.push_front(index);
         }
         for (int i : nindicies) {
-            QFileInfo &info = std::get<1>(imgList[i]);;
-            bool &loaded = std::get<2>(imgList[i]);;
+            QFileInfo &info = std::get<1>(imgList[i]);
+            bool &loaded = std::get<2>(imgList[i]);
             if (!loaded) {
                 if (qiltp.load(info.canonicalFilePath())) {
                     qDebug() << info.canonicalFilePath() << "loading...";
                 }
+            }
+        }
+        for (int i = 0; i < imgList.length(); i++) {
+            if (nindicies.contains(i)) continue;
+            bool &loaded = std::get<2>(imgList[i]);
+            if (loaded) {
+                QImage &img = std::get<0>(imgList[i]);
+                img = QImage();
+                loaded = false;
             }
         }
     }
@@ -82,14 +91,19 @@ void QHotLoadImageBay::add(QFileInfo info) {
 QImage QHotLoadImageBay::current() {
     if (imgList.length() > 0) {
         QImage &img = std::get<0>(imgList[index]);
+        QFileInfo &info = std::get<1>(imgList[index]);
         bool &loaded = std::get<2>(imgList[index]);;
         if (loaded) {
             if (img.isNull()) {
                 imgList.removeAt(index);
                 this->internalSettleIndex();
                 return current();
-            } else return img;
+            } else {
+                emit activeStatusUpdate(info.fileName() + QString(" loaded."));
+                return img;
+            }
         } else {
+            emit activeStatusUpdate(info.fileName() + QString(" not loaded. Worker threads will load shortly..."));
             return QImage(0, 0);
         }
     } else {
@@ -117,6 +131,7 @@ void QHotLoadImageBay::handleSuccess(QString comppath, QImage newimg) {
             loaded = true;
             QFileInfo &curInfo = std::get<1>(imgList[index]);;
             if (curInfo == info) {
+                emit activeStatusUpdate(info.fileName() + QString(" loaded."));
                 emit activeLoaded(img);
             }
             return;

@@ -49,6 +49,7 @@ public:
 signals:
     void activeLoaded(QImage);
     void activeFailed();
+    void activeStatusUpdate(QString);
 private slots:
     void handleSuccess(QString, QImage);
     void handleFailure(QString);

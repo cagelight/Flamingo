@@ -1,9 +1,11 @@
 #include <QtGui>
 #include "qw_imgview.hpp"
 
-QImageView::QImageView(QWidget *parent, QPixmap image) : QWidget(parent), view(image) {
-    this->rasterTimer.setSingleShot(true);
-    QObject::connect(&rasterTimer, SIGNAL(timeout()), this, SLOT(bilinearRaster()));
+Q_DECLARE_METATYPE(DrawSet)
+
+QImageView::QImageView(QWidget *parent, QPixmap image) : QWidget(parent), view(image), viewI(image.toImage()), bilinearWorker(this) {
+    qRegisterMetaType<DrawSet>("DrawSet");
+    QObject::connect(&bilinearWorker, SIGNAL(done(DrawSet)), this, SLOT(handleBilinear(DrawSet)));
 }
 
 QSize QImageView::sizeHint() const {
@@ -31,18 +33,24 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
         drawRect.setX((int)((this->width() - drawSize.width()) / 2.0f));
         drawRect.setY((int)((this->height() - drawSize.height()) / 2.0f));
         drawRect.setSize(drawSize);
-        if (fastRaster) {
-            paint.drawPixmap(drawRect, view, partRect);
-        } else {
-            QPixmap view2 = view.copy(partRect).scaled(drawRect.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            paint.drawPixmap(drawRect, view2);
+        {
+            QRect &partRectBil = std::get<0>(bilinearObject);
+            QRect &drawRectBil = std::get<1>(bilinearObject);
+            QImage &imgOrig = std::get<2>(bilinearObject);
+            QImage &imgBilPart = std::get<3>(bilinearObject);
+            if (drawRect == drawRectBil && partRect == partRectBil && viewI == imgOrig) {
+                paint.drawImage(drawRect, imgBilPart);
+            } else {
+                paint.drawPixmap(drawRect, view, partRect);
+                QImage nil = QImage();
+                bilinearWorker.render(std::tie<QRect, QRect, QImage, QImage>(partRect, drawRect, viewI, nil));
+            }
         }
     }
 }
 
 void QImageView::resizeEvent(QResizeEvent *) {
     this->calculateMax();
-    this->bilinearRasterDelayed();
 }
 
 void QImageView::wheelEvent(QWheelEvent *QWE) {
@@ -75,41 +83,30 @@ void QImageView::mouseMoveEvent(QMouseEvent *QME) {
         this->calculateView();
         if (viewOffset.toPoint() != prevView.toPoint()) {
             this->update();
-            this->bilinearRasterDelayed();
         }
         this->prevMPos = QME->pos();
     }
 }
 
 void QImageView::setImage(const QImage &newView) {
-    this->view = QPixmap::fromImage(newView);
+    this->viewI = newView;
+    this->view = QPixmap::fromImage(viewI);
     this->keepFit = true;
     this->repaint();
-    //this->bilinearRaster(true);
 }
 
 void QImageView::setImage(const QPixmap &newView) {
     this->view = newView;
+    this->viewI = view.toImage();
     this->keepFit = true;
     this->repaint();
-    //this->bilinearRaster(true);
 }
 
-void QImageView::bilinearRaster(bool forceZoomed) {
-    if (zoom != 1.0f || forceZoomed) {
-        fastRaster = false;
-        this->repaint();
-        fastRaster = true;
-    }
-}
-
-void QImageView::bilinearRasterDelayed(int msec) {
-    if (rasterTimer.isActive()) {
-        rasterTimer.stop();
-        rasterTimer.start(msec);
-    } else {
-        rasterTimer.start(msec);
-    }
+void QImageView::handleBilinear(DrawSet d) {
+    this->bilinearObject = d;
+    QRect &partRectBil = std::get<0>(bilinearObject);
+    QImage &imgOrig = std::get<2>(bilinearObject);
+    if (partRect == partRectBil && viewI == imgOrig) this->repaint();
 }
 
 void QImageView::setZoom(qreal nZoom, QPointF focus) {
@@ -132,11 +129,9 @@ void QImageView::setZoom(qreal nZoom, QPointF focus) {
         zoom = nZoom;
         keepFit = false;
         this->repaint();
-        this->bilinearRasterDelayed();
     } else if (keepFit == false && zoom == nZoom && zoom != zoomMin) {
         keepFit = true;
         this->repaint();
-        this->bilinearRasterDelayed();
     }
 }
 

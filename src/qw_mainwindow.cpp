@@ -4,9 +4,10 @@
 
 FlamingoMainWindow::FlamingoMainWindow(QFileInfoList infos) : FlamingoMainWindow() {
     fview = new QFlamingoView(infos, this);
-    QObject::connect(fview, SIGNAL(busy(QString)), this, SLOT(setStatusBusy(QString)));
-    QObject::connect(fview, SIGNAL(ok()), this, SLOT(setStatusOK()));
+    fview->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     layoutMain->addWidget(fview, 0, 0);
+
+    QObject::connect(fview, SIGNAL(statusUpdate(QString)), this, SLOT(handleStatusUpdate(QString)));
 }
 
 FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
@@ -14,10 +15,9 @@ FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     this->resize(800, 600);
     //Initialization
     layoutMain = new QGridLayout(this);
-    iprogbar = new QProgressBar(this);
-    iprogbar->setMaximum(1);
+    istatbar = new QStatusBar(this);
     //Layouting
-    layoutMain->addWidget(iprogbar, 1, 0);
+    layoutMain->addWidget(istatbar, 1, 0);
     layoutMain->setMargin(0);
 }
 
@@ -42,12 +42,6 @@ void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
     }
 }
 
-void FlamingoMainWindow::setStatusBusy(QString msg) {
-    this->iprogbar->setValue(0);
-    this->iprogbar->setFormat(msg);
-}
-
-void FlamingoMainWindow::setStatusOK() {
-    this->iprogbar->setValue(1);
-    this->iprogbar->resetFormat();
+void FlamingoMainWindow::handleStatusUpdate(QString str) {
+    this->istatbar->showMessage(str);
 }

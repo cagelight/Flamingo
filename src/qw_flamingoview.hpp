@@ -14,9 +14,13 @@ class QFlamingoView : public QImageView {
     Q_OBJECT
 public: //Methods
     QFlamingoView(QFileInfoList fi, QWidget *parent = 0);
+signals:
+    void statusUpdate(QString);
 public slots:
     void Next();
     void Prev();
+private slots:
+    void handleQHLIStatus(QString);
 private:
     QHotLoadImageBay qhlib;
 };

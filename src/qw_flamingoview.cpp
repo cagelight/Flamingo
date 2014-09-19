@@ -5,6 +5,7 @@
 #include <QImageReader>
 
 QFlamingoView::QFlamingoView(QFileInfoList fi, QWidget *parent) : QImageView(parent) {
+    QObject::connect(&qhlib, SIGNAL(activeStatusUpdate(QString)), this, SLOT(handleQHLIStatus(QString)));
     QObject::connect(&qhlib, SIGNAL(activeLoaded(QImage)), this, SLOT(setImage(QImage)));
     for (QFileInfo info : fi) {
         if (info.exists()) {
@@ -27,4 +28,8 @@ void QFlamingoView::Next() {
 
 void QFlamingoView::Prev() {
     this->setImage(qhlib.previous());
+}
+
+void QFlamingoView::handleQHLIStatus(QString str) {
+    emit statusUpdate(str);
 }

@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QFileInfo>
 class QGridLayout;
-class QProgressBar;
+class QStatusBar;
 class QFlamingoView;
 
 class FlamingoMainWindow : public QWidget {
@@ -16,13 +16,12 @@ public: //Methods
 signals:
     void closed();
 private slots:
-    void setStatusBusy(QString);
-    void setStatusOK();
+    void handleStatusUpdate(QString);
 private: //Widgets
     FlamingoMainWindow();
     QGridLayout *layoutMain = nullptr;
     QFlamingoView *fview = nullptr;
-    QProgressBar *iprogbar = nullptr;
+    QStatusBar *istatbar = nullptr;
 };
 
 #endif // QWIDGET_MAINWINDOW_HPP
