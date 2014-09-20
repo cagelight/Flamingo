@@ -21,6 +21,7 @@ public slots:
     void Prev();
 private slots:
     void handleQHLIStatus(QString);
+    void flamSetImage(QImage);
 private:
     QHotLoadImageBay qhlib;
 };

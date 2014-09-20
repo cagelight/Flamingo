@@ -12,7 +12,8 @@
 #include <QFileInfo>
 #include <QThread>
 
-typedef std::tuple<QImage, QFileInfo, bool> QFileImage;
+
+typedef std::pair<QString, std::thread*> LoadThread;
 
 class QImageLoadThreadPool : public QObject{
     Q_OBJECT
@@ -20,6 +21,7 @@ public:
     QImageLoadThreadPool(QObject *parent = 0) : QObject(parent) {
         QObject::connect(this, SIGNAL(loadComplete(QString,QImage)), this, SLOT(internalThreadEnd(QString,QImage)));
     }
+    ~QImageLoadThreadPool();
     void takeControl() {controlExternal.lock();}
     void releaseControl() {controlExternal.unlock();}
     bool load(QString);
@@ -32,10 +34,12 @@ private slots:
 private:
     void internalThreadRun(QString);
     void internalJoinThread(QString);
-    std::thread *testThread = nullptr;
+    QList<LoadThread> workers;
     std::mutex controlExternal;
     std::mutex controlInternal;
 };
+
+typedef std::tuple<QImage, QFileInfo, bool> QFileImage;
 
 class QHotLoadImageBay : public QObject {
     Q_OBJECT
@@ -46,6 +50,7 @@ public:
     QImage current();
     QImage next();
     QImage previous();
+    QImage skipTo(QFileInfo);
 signals:
     void activeLoaded(QImage);
     void activeFailed();
@@ -54,6 +59,8 @@ private slots:
     void handleSuccess(QString, QImage);
     void handleFailure(QString);
 private:
+    enum Direction {D_PREV, D_NEXT, D_NEUTRAL};
+    std::atomic<Direction> lastDirection;
     QList<QFileImage> imgList;
     int internalGetNextIndex(int jump = 0) {
         if (imgList.length() > 0) {

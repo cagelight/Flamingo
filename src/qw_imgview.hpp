@@ -1,7 +1,6 @@
 #ifndef QW_IMGVIEW_HPP
 #define QW_IMGVIEW_HPP
 
-#include <atomic>
 #include <thread>
 #include <QWidget>
 #include <QPixmap>
@@ -10,13 +9,18 @@
 
 typedef std::tuple<QRect, QRect, QImage, QImage> DrawSet;
 
-class QBilinearWorker;
-
 class QBilinearWorker : public QObject {
     Q_OBJECT
 public:
     QBilinearWorker(QObject *parent = 0) : QObject(parent) {
         this->startTimer(10);
+    }
+    ~QBilinearWorker() {
+        if (worker != nullptr) {
+            if (worker->joinable()) worker->join();
+            delete worker;
+            worker = nullptr;
+        }
     }
     void timerEvent(QTimerEvent *) {
         if (doRender) {
@@ -66,6 +70,7 @@ public:
     void mousePressEvent(QMouseEvent *);
     void mouseReleaseEvent(QMouseEvent *);
     void mouseMoveEvent(QMouseEvent *);
+    QImage getImage() {return viewI;}
 public slots:
     void setImage(const QImage&);
     void setImage(const QPixmap&);

@@ -13,6 +13,7 @@ public: //Methods
     FlamingoMainWindow(QFileInfoList);
     void closeEvent(QCloseEvent *);
     void keyPressEvent(QKeyEvent *);
+    void wheelEvent(QWheelEvent *);
 signals:
     void closed();
 private slots:

@@ -47,15 +47,20 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
             }
         }
     }
+    QWidget::paintEvent(QPE);
 }
 
-void QImageView::resizeEvent(QResizeEvent *) {
+void QImageView::resizeEvent(QResizeEvent *QRE) {
     this->calculateMax();
+    QWidget::resizeEvent(QRE);
 }
 
 void QImageView::wheelEvent(QWheelEvent *QWE) {
-    QWE->accept();
-    this->setZoom((1.0f - QWE->delta() / 360.0f / 1.5f) * zoom, QPointF(QWE->pos().x() / (float)this->width() , QWE->pos().y() / (float)this->height()));
+    if (QWE->orientation() == Qt::Vertical) {
+        QWE->accept();
+        this->setZoom((1.0f - QWE->delta() / 360.0f / 1.5f) * zoom, QPointF(QWE->pos().x() / (float)this->width() , QWE->pos().y() / (float)this->height()));
+    }
+    QWidget::wheelEvent(QWE);
 }
 
 void QImageView::mousePressEvent(QMouseEvent *QME) {
@@ -66,12 +71,14 @@ void QImageView::mousePressEvent(QMouseEvent *QME) {
     if (QME->button() == Qt::MiddleButton) {
         this->setZoom(1.0f, QPointF(QME->pos().x() / (float)this->width() , QME->pos().y() / (float)this->height()));
     }
+    QWidget::mousePressEvent(QME);
 }
 
 void QImageView::mouseReleaseEvent(QMouseEvent *QME) {
     if (QME->button() == Qt::LeftButton) {
         this->mouseMoving = false;
     }
+    QWidget::mouseReleaseEvent(QME);
 }
 
 void QImageView::mouseMoveEvent(QMouseEvent *QME) {
@@ -86,6 +93,7 @@ void QImageView::mouseMoveEvent(QMouseEvent *QME) {
         }
         this->prevMPos = QME->pos();
     }
+    QWidget::mouseMoveEvent(QME);
 }
 
 void QImageView::setImage(const QImage &newView) {

@@ -2,12 +2,25 @@
 
 #include <QDebug>
 
+QImageLoadThreadPool::~QImageLoadThreadPool() {
+    for (LoadThread &lt : workers) {
+        if (lt.second->joinable()) lt.second->join();
+        delete lt.second;
+    }
+}
+
 bool QImageLoadThreadPool::load(QString path) {
     bool rv = false;
     controlInternal.lock();
-    if (testThread == nullptr) {
-        testThread = new std::thread(std::bind(&QImageLoadThreadPool::internalThreadRun, this, path));
-        rv = true;
+    if (workers.length() < 5) {
+        bool gtg = true;
+        for (LoadThread &lt : workers) {
+            if (lt.first == path) gtg = false;
+        }
+        if (gtg) {
+            workers.append(LoadThread(path, new std::thread(std::bind(&QImageLoadThreadPool::internalThreadRun, this, path))));
+            rv = true;
+        }
     }
     controlInternal.unlock();
     return rv;
@@ -29,19 +42,24 @@ void QImageLoadThreadPool::internalThreadRun(QString path) {
     controlExternal.unlock();
 }
 
-void QImageLoadThreadPool::internalJoinThread(QString) {
+void QImageLoadThreadPool::internalJoinThread(QString path) {
     controlInternal.lock();
-    if (testThread != nullptr) {
-        if (testThread->joinable()) testThread->join();
-        delete testThread;
-        testThread = nullptr;
+    QMutableListIterator<LoadThread> qmli(workers);
+    while(qmli.hasNext()) {
+        LoadThread &lt = qmli.next();
+        if (lt.first == path) {
+            if (lt.second->joinable()) lt.second->join();
+            delete lt.second;
+            qmli.remove();
+            break;
+        }
     }
     controlInternal.unlock();
 }
 
 ///--------------------------------------------///
 
-QHotLoadImageBay::QHotLoadImageBay() : QObject() {
+QHotLoadImageBay::QHotLoadImageBay() : QObject(), lastDirection(D_NEUTRAL) {
     QObject::connect(&qiltp, SIGNAL(loadSuccess(QString,QImage)), this, SLOT(handleSuccess(QString,QImage)));
     QObject::connect(&qiltp, SIGNAL(loadFailed(QString)), this, SLOT(handleFailure(QString)));
     this->startTimer(50);
@@ -68,7 +86,6 @@ void QHotLoadImageBay::timerEvent(QTimerEvent *) {
             bool &loaded = std::get<2>(imgList[i]);
             if (!loaded) {
                 if (qiltp.load(info.canonicalFilePath())) {
-                    qDebug() << info.canonicalFilePath() << "loading...";
                 }
             }
         }
@@ -97,6 +114,7 @@ QImage QHotLoadImageBay::current() {
             if (img.isNull()) {
                 imgList.removeAt(index);
                 this->internalSettleIndex();
+                if (lastDirection == D_PREV) this->internalPrevious();
                 return current();
             } else {
                 emit activeStatusUpdate(info.fileName() + QString(" loaded."));
@@ -113,11 +131,25 @@ QImage QHotLoadImageBay::current() {
 
 QImage QHotLoadImageBay::next() {
     internalNext();
+    this->lastDirection.store(D_NEXT);
     return current();
 }
 
 QImage QHotLoadImageBay::previous() {
     internalPrevious();
+    this->lastDirection.store(D_PREV);
+    return current();
+}
+
+QImage QHotLoadImageBay::skipTo(QFileInfo fi) {
+    for (int i = 0; i < imgList.length(); i++) {
+        const QFileInfo &lfi = std::get<1>(imgList.at(i));
+        if (lfi == fi) {
+            index = i;
+            this->internalSettleIndex();
+            return current();
+        }
+    }
     return current();
 }
 
@@ -147,6 +179,7 @@ void QHotLoadImageBay::handleFailure(QString comppath) {
         if (info.canonicalFilePath() == comppath) {
             imgList.removeAt(i);
             this->internalSettleIndex();
+            if (i < index) this->internalPrevious();
             if (imgList.length() > 0) {
                 QFileInfo &curInfo = std::get<1>(imgList[index]);
                 if (curInfo.canonicalFilePath() == info.canonicalFilePath()) {

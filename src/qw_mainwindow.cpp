@@ -42,6 +42,17 @@ void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
     }
 }
 
+void FlamingoMainWindow::wheelEvent(QWheelEvent * QWE) {
+    if (QWE->orientation() == Qt::Horizontal) {
+        QWE->accept();
+        if (QWE->delta() > 0) {
+            fview->Next();
+        } else if (QWE->delta() < 0) {
+            fview->Prev();
+        }
+    }
+}
+
 void FlamingoMainWindow::handleStatusUpdate(QString str) {
     this->istatbar->showMessage(str);
 }
