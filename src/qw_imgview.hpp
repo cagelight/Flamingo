@@ -62,7 +62,7 @@ private:
 class QImageView : public QWidget {
     Q_OBJECT
 public:
-    QImageView(QWidget *parent = 0, QPixmap image = QPixmap(0, 0));
+    QImageView(QWidget *parent = 0, QImage image = QImage(0, 0));
     QSize sizeHint() const;
     void paintEvent(QPaintEvent*);
     void resizeEvent(QResizeEvent *);
@@ -70,15 +70,13 @@ public:
     void mousePressEvent(QMouseEvent *);
     void mouseReleaseEvent(QMouseEvent *);
     void mouseMoveEvent(QMouseEvent *);
-    QImage getImage() {return viewI;}
+    QImage getImage() {return view;}
 public slots:
     void setImage(const QImage&);
-    void setImage(const QPixmap&);
 private slots:
     void handleBilinear(DrawSet);
 private: //Variables
-    QPixmap view;
-    QImage viewI;
+    QImage view;
     float zoom = 1.0f;
     QRect partRect;
     float zoomMin = 0.025f;

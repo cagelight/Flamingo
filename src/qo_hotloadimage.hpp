@@ -19,7 +19,7 @@ class QImageLoadThreadPool : public QObject{
     Q_OBJECT
 public:
     QImageLoadThreadPool(QObject *parent = 0) : QObject(parent) {
-        QObject::connect(this, SIGNAL(loadComplete(QString,QImage)), this, SLOT(internalThreadEnd(QString,QImage)));
+        QObject::connect(this, SIGNAL(loadComplete(QString,QImage)), this, SLOT(internalThreadEnd(QString,QImage)), Qt::QueuedConnection);
     }
     ~QImageLoadThreadPool();
     void takeControl() {controlExternal.lock();}

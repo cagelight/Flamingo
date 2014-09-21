@@ -3,7 +3,7 @@
 
 Q_DECLARE_METATYPE(DrawSet)
 
-QImageView::QImageView(QWidget *parent, QPixmap image) : QWidget(parent), view(image), viewI(image.toImage()), bilinearWorker(this) {
+QImageView::QImageView(QWidget *parent, QImage image) : QWidget(parent), view(image), bilinearWorker(this) {
     qRegisterMetaType<DrawSet>("DrawSet");
     QObject::connect(&bilinearWorker, SIGNAL(done(DrawSet)), this, SLOT(handleBilinear(DrawSet)));
 }
@@ -26,9 +26,6 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
         } else {
             drawSize = partRect.size().scaled(this->size(), Qt::KeepAspectRatio);
         }
-        float widgetRatio, pixmapRatio;
-        widgetRatio = this->width() / (float) this->height();
-        pixmapRatio = drawSize.width() / drawSize.height();
         QRect drawRect;
         drawRect.setX((int)((this->width() - drawSize.width()) / 2.0f));
         drawRect.setY((int)((this->height() - drawSize.height()) / 2.0f));
@@ -38,12 +35,12 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
             QRect &drawRectBil = std::get<1>(bilinearObject);
             QImage &imgOrig = std::get<2>(bilinearObject);
             QImage &imgBilPart = std::get<3>(bilinearObject);
-            if (drawRect == drawRectBil && partRect == partRectBil && viewI == imgOrig) {
+            if (drawRect == drawRectBil && partRect == partRectBil && view == imgOrig) {
                 paint.drawImage(drawRect, imgBilPart);
             } else {
-                paint.drawPixmap(drawRect, view, partRect);
+                paint.drawImage(drawRect, view, partRect);
                 QImage nil = QImage();
-                bilinearWorker.render(std::tie<QRect, QRect, QImage, QImage>(partRect, drawRect, viewI, nil));
+                bilinearWorker.render(std::tie<QRect, QRect, QImage, QImage>(partRect, drawRect, view, nil));
             }
         }
     }
@@ -97,15 +94,7 @@ void QImageView::mouseMoveEvent(QMouseEvent *QME) {
 }
 
 void QImageView::setImage(const QImage &newView) {
-    this->viewI = newView;
-    this->view = QPixmap::fromImage(viewI);
-    this->keepFit = true;
-    this->repaint();
-}
-
-void QImageView::setImage(const QPixmap &newView) {
     this->view = newView;
-    this->viewI = view.toImage();
     this->keepFit = true;
     this->repaint();
 }
@@ -114,7 +103,7 @@ void QImageView::handleBilinear(DrawSet d) {
     this->bilinearObject = d;
     QRect &partRectBil = std::get<0>(bilinearObject);
     QImage &imgOrig = std::get<2>(bilinearObject);
-    if (partRect == partRectBil && viewI == imgOrig) this->repaint();
+    if (partRect == partRectBil && view == imgOrig) this->repaint();
 }
 
 void QImageView::setZoom(qreal nZoom, QPointF focus) {

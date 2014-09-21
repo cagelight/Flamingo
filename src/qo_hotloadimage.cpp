@@ -12,7 +12,7 @@ QImageLoadThreadPool::~QImageLoadThreadPool() {
 bool QImageLoadThreadPool::load(QString path) {
     bool rv = false;
     controlInternal.lock();
-    if (workers.length() < 5) {
+    if (workers.length() < 3) {
         bool gtg = true;
         for (LoadThread &lt : workers) {
             if (lt.first == path) gtg = false;
@@ -60,8 +60,8 @@ void QImageLoadThreadPool::internalJoinThread(QString path) {
 ///--------------------------------------------///
 
 QHotLoadImageBay::QHotLoadImageBay() : QObject(), lastDirection(D_NEUTRAL) {
-    QObject::connect(&qiltp, SIGNAL(loadSuccess(QString,QImage)), this, SLOT(handleSuccess(QString,QImage)));
-    QObject::connect(&qiltp, SIGNAL(loadFailed(QString)), this, SLOT(handleFailure(QString)));
+    QObject::connect(&qiltp, SIGNAL(loadSuccess(QString,QImage)), this, SLOT(handleSuccess(QString,QImage)), Qt::DirectConnection);
+    QObject::connect(&qiltp, SIGNAL(loadFailed(QString)), this, SLOT(handleFailure(QString)), Qt::DirectConnection);
     this->startTimer(50);
 }
 
@@ -71,10 +71,10 @@ void QHotLoadImageBay::timerEvent(QTimerEvent *) {
         QList<int> nindicies;
         switch (length) {
         default:
-            nindicies.push_front(internalGetPreviousIndex(1));
-        case 4:
-            nindicies.push_front(internalGetNextIndex(1));
-        case 3:
+        //    nindicies.push_front(internalGetPreviousIndex(1));
+        //case 4:
+        //    nindicies.push_front(internalGetNextIndex(1));
+        //case 3:
             nindicies.push_front(internalGetPreviousIndex());
         case 2:
             nindicies.push_front(internalGetNextIndex());
@@ -156,8 +156,8 @@ QImage QHotLoadImageBay::skipTo(QFileInfo fi) {
 void QHotLoadImageBay::handleSuccess(QString comppath, QImage newimg) {
     for (int i = 0; i < imgList.length(); i++) {
         QImage &img = std::get<0>(imgList[i]);
-        QFileInfo &info = std::get<1>(imgList[i]);;
-        bool &loaded = std::get<2>(imgList[i]);;
+        QFileInfo &info = std::get<1>(imgList[i]);
+        bool &loaded = std::get<2>(imgList[i]);
         if (info.canonicalFilePath() == comppath) {
             img = newimg;
             loaded = true;
