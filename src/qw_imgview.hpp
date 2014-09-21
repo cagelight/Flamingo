@@ -47,7 +47,7 @@ private:
     void threadRun(DrawSet d) {
         QRect &partRectBil = std::get<0>(d);
         QRect &drawRectBil = std::get<1>(d);
-        QImage &imgOrig = std::get<2>(d);
+        const QImage &imgOrig = std::get<2>(d);
         QImage &imgBilPart = std::get<3>(d);
         imgBilPart = imgOrig.copy(partRectBil).scaled(drawRectBil.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
         threadFinished = true;

@@ -20,7 +20,7 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
         this->calculateView();
         QSize drawSize;
         if (paintCompletePartial) {
-            drawSize = partRect.size().scaled(this->size(), Qt::IgnoreAspectRatio);
+            drawSize = this->size();
         } else if (partRect.width() < this->width() && partRect.height() < this->height() && (zoom >= 1.0f || zoom == zoomMax)) {
             drawSize = partRect.size();
         } else {
@@ -102,8 +102,9 @@ void QImageView::setImage(const QImage &newView) {
 void QImageView::handleBilinear(DrawSet d) {
     this->bilinearObject = d;
     QRect &partRectBil = std::get<0>(bilinearObject);
-    QImage &imgOrig = std::get<2>(bilinearObject);
-    if (partRect == partRectBil && view == imgOrig) this->repaint();
+    const QImage &imgOrig = std::get<2>(bilinearObject);
+    const QImage &imgBil = std::get<3>(bilinearObject);
+    if (partRect == partRectBil && view == imgOrig && !imgBil.isNull()) this->repaint();
 }
 
 void QImageView::setZoom(qreal nZoom, QPointF focus) {
