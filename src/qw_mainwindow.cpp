@@ -1,7 +1,7 @@
 #include "qw_mainwindow.hpp"
 #include "qw_flamingoview.hpp"
 
-FlamingoMainWindow::FlamingoMainWindow(QFileInfoList infos) : FlamingoMainWindow() {
+FlamingoMainWindow::FlamingoMainWindow(QFileInfoArgumentList infos) : FlamingoMainWindow() {
     fview = new QFlamingoView(infos, this);
     fview->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     layoutMain->addWidget(fview, 0, 0, 1, 2);
@@ -60,7 +60,10 @@ void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
         }
         break;
     case Qt::Key_S:
-        this->stopSlideshow();
+        if (ssTimer->isActive())
+            this->stopSlideshow();
+        else
+            this->startSlideshow();
         break;
     }
 }

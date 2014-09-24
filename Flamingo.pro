@@ -21,7 +21,8 @@ HEADERS  += \
     src/qw_imgview.hpp \
     src/qw_flamingoview.hpp \
     src/qreversiblelistiterator.hpp \
-    src/qo_hotloadimage.hpp
+    src/qo_hotloadimage.hpp \
+    src/qfileinfoargument.hpp
 
 Release:DESTDIR = release
 Release:OBJECTS_DIR = release/.obj

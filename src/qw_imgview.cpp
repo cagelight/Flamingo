@@ -6,6 +6,9 @@ Q_DECLARE_METATYPE(DrawSet)
 QImageView::QImageView(QWidget *parent, QImage image) : QWidget(parent), view(image), bilinearWorker(this) {
     qRegisterMetaType<DrawSet>("DrawSet");
     QObject::connect(&bilinearWorker, SIGNAL(done(DrawSet)), this, SLOT(handleBilinear(DrawSet)));
+    mouseHider->setSingleShot(true);
+    QObject::connect(mouseHider, SIGNAL(timeout()), this, SLOT(hideMouse()));
+    this->setMouseTracking(true);
 }
 
 QSize QImageView::sizeHint() const {
@@ -61,6 +64,7 @@ void QImageView::wheelEvent(QWheelEvent *QWE) {
 }
 
 void QImageView::mousePressEvent(QMouseEvent *QME) {
+    this->showMouse();
     if (QME->button() == Qt::LeftButton) {
         QME->accept();
         this->setFocus();
@@ -81,6 +85,7 @@ void QImageView::mouseReleaseEvent(QMouseEvent *QME) {
 }
 
 void QImageView::mouseMoveEvent(QMouseEvent *QME) {
+    this->showMouse();
     if (mouseMoving) {
         QPointF nPosAdj = ((QPointF)prevMPos - (QPointF)QME->pos()) * zoom;
         QPointF prevView = viewOffset;

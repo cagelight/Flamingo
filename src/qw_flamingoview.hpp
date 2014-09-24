@@ -9,11 +9,12 @@
 #include "qw_imgview.hpp"
 #include "qo_hotloadimage.hpp"
 #include "qreversiblelistiterator.hpp"
+#include "qfileinfoargument.hpp"
 
 class QFlamingoView : public QImageView {
     Q_OBJECT
 public: //Methods
-    QFlamingoView(QFileInfoList fi, QWidget *parent = 0);
+    QFlamingoView(QFileInfoArgumentList fi, QWidget *parent = 0);
     void hideEvent(QHideEvent *);
     void showEvent(QShowEvent *);
 signals:

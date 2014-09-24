@@ -75,6 +75,8 @@ public slots:
     void setImage(const QImage&);
 private slots:
     void handleBilinear(DrawSet);
+    void hideMouse() {this->setCursor(Qt::BlankCursor);}
+    void showMouse() {this->setCursor(Qt::ArrowCursor); mouseHider->start(500);}
 private: //Variables
     QImage view;
     float zoom = 1.0f;
@@ -89,6 +91,7 @@ private: //Variables
     QPointF focalPoint;
     DrawSet bilinearObject;
     QBilinearWorker bilinearWorker;
+    QTimer *mouseHider = new QTimer(this);
 private: //Methods
     void setZoom(qreal, QPointF focus = QPointF(0, 0));
     void calculateMax();

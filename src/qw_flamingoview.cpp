@@ -4,7 +4,19 @@
 #include <QImageReader>
 #include <QtWidgets>
 
-QFlamingoView::QFlamingoView(QFileInfoList fi, QWidget *parent) : QImageView(parent) {
+static void recurseThroughQDir(QFileInfoList &qfil, const QDir &D, int iter = std::numeric_limits<int>::max()) {
+    for (QFileInfo file : D.entryInfoList(QDir::Files)) {
+        qfil.append(file);
+    }
+    iter--;
+    if (iter <= 0) return;
+    for (QFileInfo infoDir : D.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        QDir dir = QDir(infoDir.canonicalFilePath());
+        recurseThroughQDir(qfil, dir, iter);
+    }
+}
+
+QFlamingoView::QFlamingoView(QFileInfoArgumentList fi, QWidget *parent) : QImageView(parent) {
     QObject::connect(&qhlib, SIGNAL(activeStatusUpdate(QString)), this, SLOT(handleQHLIStatus(QString)));
     QObject::connect(&qhlib, SIGNAL(activeLoaded(QImage)), this, SLOT(flamSetImage(QImage)));
     if (fi.length() == 0) {
@@ -13,7 +25,8 @@ QFlamingoView::QFlamingoView(QFileInfoList fi, QWidget *parent) : QImageView(par
             qhlib.add(file);
         }
     } else if (fi.length() == 1) {
-        const QFileInfo &file = fi.at(0);
+        const QFileInfoArgument &file = fi.at(0);
+
         if (file.isFile()) {
             QDir dir = file.dir();
             for (QFileInfo file2 : dir.entryInfoList(QDir::Files)) {
@@ -22,12 +35,18 @@ QFlamingoView::QFlamingoView(QFileInfoList fi, QWidget *parent) : QImageView(par
             qhlib.skipTo(file);
         } else {
             QDir dir = QDir(file.canonicalFilePath());
+            if (file.isRecursive()) {
+                QFileInfoList qfil;
+                recurseThroughQDir(qfil, dir);
+                for (QFileInfo file2 : qfil)
+                    qhlib.add(file2);
+            }
             for (QFileInfo file : dir.entryInfoList(QDir::Files)) {
                 qhlib.add(file);
             }
         }
     } else {
-        for (QFileInfo info : fi) {
+        for (QFileInfoArgument info : fi) {
             if (info.exists()) {
                 if (info.isFile()) {
                     qhlib.add(info);

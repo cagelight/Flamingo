@@ -1,6 +1,7 @@
 #ifndef QWIDGET_MAINWINDOW_HPP
 #define QWIDGET_MAINWINDOW_HPP
 
+#include "qfileinfoargument.hpp"
 #include <QtWidgets>
 #include <QFileInfo>
 class QFlamingoView;
@@ -8,7 +9,7 @@ class QFlamingoView;
 class FlamingoMainWindow : public QWidget {
     Q_OBJECT
 public: //Methods
-    FlamingoMainWindow(QFileInfoList);
+    FlamingoMainWindow(QFileInfoArgumentList);
     void closeEvent(QCloseEvent *);
     void keyPressEvent(QKeyEvent *);
     void wheelEvent(QWheelEvent *);
