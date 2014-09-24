@@ -62,6 +62,8 @@ void QImageView::wheelEvent(QWheelEvent *QWE) {
 
 void QImageView::mousePressEvent(QMouseEvent *QME) {
     if (QME->button() == Qt::LeftButton) {
+        QME->accept();
+        this->setFocus();
         this->mouseMoving = true;
         this->prevMPos = QME->pos();
     }

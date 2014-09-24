@@ -18,13 +18,14 @@ typedef std::pair<QString, std::thread*> LoadThread;
 class QImageLoadThreadPool : public QObject{
     Q_OBJECT
 public:
-    QImageLoadThreadPool(QObject *parent = 0) : QObject(parent) {
+    enum PATH_STATUS {PATH_NULL, PATH_SUCCESS, PATH_FAILURE, PATH_INSUFFICIENT_MEMORY, PATH_ALREADY_LOADING, PATH_MAX_WORKERS};
+    QImageLoadThreadPool(int maxBytes = 805306368, QObject *parent = 0) : QObject(parent), maxBytes(maxBytes) {
         QObject::connect(this, SIGNAL(loadComplete(QString,QImage)), this, SLOT(internalThreadEnd(QString,QImage)), Qt::QueuedConnection);
     }
     ~QImageLoadThreadPool();
     void takeControl() {controlExternal.lock();}
     void releaseControl() {controlExternal.unlock();}
-    bool load(QString);
+    PATH_STATUS load(QString, int &bytesLoaded);
 signals:
     void loadSuccess(QString, QImage);
     void loadFailed(QString);
@@ -32,6 +33,7 @@ signals:
 private slots:
     void internalThreadEnd(QString, QImage);
 private:
+    int maxBytes;
     void internalThreadRun(QString);
     void internalJoinThread(QString);
     QList<LoadThread> workers;
@@ -40,6 +42,7 @@ private:
 };
 
 typedef std::tuple<QImage, QFileInfo, bool> QFileImage;
+typedef QImageLoadThreadPool QILTP;
 
 class QHotLoadImageBay : public QObject {
     Q_OBJECT
@@ -50,11 +53,15 @@ public:
     QImage current();
     QImage next();
     QImage previous();
+    QImage random();
     QImage skipTo(QFileInfo);
 signals:
     void activeLoaded(QImage);
     void activeFailed();
     void activeStatusUpdate(QString);
+public slots:
+    void Activate();
+    void Deactivate();
 private slots:
     void handleSuccess(QString, QImage);
     void handleFailure(QString);
@@ -82,9 +89,14 @@ private:
     }
     void internalNext() {index = internalGetNextIndex();}
     void internalPrevious() {index = internalGetPreviousIndex();}
+    void internalRandom() {index = qrand() % imgList.length();}
     void internalSettleIndex() {internalNext(); internalPrevious();}
+    void unload(int index);
+    void remove(int index);
     int index = 0;
     QImageLoadThreadPool qiltp;
+    bool activationState = false;
+    int bytesLoaded = 0;
 };
 
 #endif // QO_HOTLOADIMAGE_HPP

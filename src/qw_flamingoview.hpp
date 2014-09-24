@@ -14,16 +14,20 @@ class QFlamingoView : public QImageView {
     Q_OBJECT
 public: //Methods
     QFlamingoView(QFileInfoList fi, QWidget *parent = 0);
+    void hideEvent(QHideEvent *);
+    void showEvent(QShowEvent *);
 signals:
     void statusUpdate(QString);
 public slots:
     void Next();
     void Prev();
+    void Rand();
 private slots:
     void handleQHLIStatus(QString);
     void flamSetImage(QImage);
 private:
     QHotLoadImageBay qhlib;
+    bool activeState = false;
 };
 
 #endif // QO_FLAMINGOVIEWMGR_HPP

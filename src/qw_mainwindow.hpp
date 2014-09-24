@@ -1,10 +1,8 @@
 #ifndef QWIDGET_MAINWINDOW_HPP
 #define QWIDGET_MAINWINDOW_HPP
 
-#include <QWidget>
+#include <QtWidgets>
 #include <QFileInfo>
-class QGridLayout;
-class QStatusBar;
 class QFlamingoView;
 
 class FlamingoMainWindow : public QWidget {
@@ -18,11 +16,22 @@ signals:
     void closed();
 private slots:
     void handleStatusUpdate(QString);
+    void startSlideshow();
+    void stopSlideshow();
 private: //Widgets
     FlamingoMainWindow();
-    QGridLayout *layoutMain = nullptr;
+    QGridLayout *layoutMain = new QGridLayout(this);
     QFlamingoView *fview = nullptr;
-    QStatusBar *istatbar = nullptr;
+    QStatusBar *istatbar = new QStatusBar(this);
+    //Slideshow
+    QWidget *widgetSS = new QWidget(this);
+    QHBoxLayout *layoutSS = new QHBoxLayout(this);
+    QLabel *ssLabel = new QLabel("Slideshow: ", this);
+    QSpinBox *ssSpin = new QSpinBox(this);
+    QLabel *ssLabelSec = new QLabel("sec ", this);
+    QCheckBox *ssShuffle = new QCheckBox("Shuffle", this);
+    QPushButton *ssStart = new QPushButton("Start", this);
+    QTimer *ssTimer = new QTimer(this);
 };
 
 #endif // QWIDGET_MAINWINDOW_HPP

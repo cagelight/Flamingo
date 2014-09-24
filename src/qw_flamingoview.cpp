@@ -1,8 +1,8 @@
 #include "qw_flamingoview.hpp"
-
 #include <QDebug>
 #include <QDir>
 #include <QImageReader>
+#include <QtWidgets>
 
 QFlamingoView::QFlamingoView(QFileInfoList fi, QWidget *parent) : QImageView(parent) {
     QObject::connect(&qhlib, SIGNAL(activeStatusUpdate(QString)), this, SLOT(handleQHLIStatus(QString)));
@@ -44,12 +44,27 @@ QFlamingoView::QFlamingoView(QFileInfoList fi, QWidget *parent) : QImageView(par
     this->setImage(qhlib.current());
 }
 
-void QFlamingoView::Next() {;
-    this->flamSetImage(qhlib.next());
+void QFlamingoView::hideEvent(QHideEvent *) {
+    qhlib.Deactivate();
+}
+
+void QFlamingoView::showEvent(QShowEvent *) {
+    qhlib.Activate();
+}
+
+void QFlamingoView::Next() {
+    QImage img = qhlib.next();
+    if (!img.isNull()) this->flamSetImage(img);
 }
 
 void QFlamingoView::Prev() {
-    this->flamSetImage(qhlib.previous());
+    QImage img = qhlib.previous();
+    if (!img.isNull()) this->flamSetImage(img);
+}
+
+void QFlamingoView::Rand() {
+    QImage img = qhlib.random();
+    if (!img.isNull()) this->flamSetImage(img);
 }
 
 void QFlamingoView::handleQHLIStatus(QString str) {
