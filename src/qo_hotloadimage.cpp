@@ -11,7 +11,7 @@ QImageLoadThreadPool::~QImageLoadThreadPool() {
     }
 }
 
-QImageLoadThreadPool::PATH_STATUS QImageLoadThreadPool::load(QString path, int &bytesLoaded) {;
+QImageLoadThreadPool::PATH_STATUS QImageLoadThreadPool::load(QString path, int &bytesLoaded) {
     PATH_STATUS status = PATH_NULL;
     controlInternal.lock();
     if (workers.length() < 3) {
