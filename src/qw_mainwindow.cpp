@@ -5,8 +5,8 @@ FlamingoMainWindow::FlamingoMainWindow(QFileInfoArgumentList infos) : FlamingoMa
     fview = new QFlamingoView(infos, this);
     fview->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     layoutMain->addWidget(fview, 0, 0, 1, 2);
-
     QObject::connect(fview, SIGNAL(statusUpdate(QString)), this, SLOT(handleStatusUpdate(QString)));
+    ssTimer->setTimerType(Qt::VeryCoarseTimer);
 }
 
 FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {

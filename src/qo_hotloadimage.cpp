@@ -2,6 +2,7 @@
 
 #include <QDebug>
 #include <QImageReader>
+#include <ctime>
 
 QImageLoadThreadPool::~QImageLoadThreadPool() {
     for (LoadThread &lt : workers) {
@@ -10,7 +11,7 @@ QImageLoadThreadPool::~QImageLoadThreadPool() {
     }
 }
 
-QImageLoadThreadPool::PATH_STATUS QImageLoadThreadPool::load(QString path, int &bytesLoaded) {
+QImageLoadThreadPool::PATH_STATUS QImageLoadThreadPool::load(QString path, int &bytesLoaded) {;
     PATH_STATUS status = PATH_NULL;
     controlInternal.lock();
     if (workers.length() < 3) {
@@ -77,6 +78,7 @@ void QImageLoadThreadPool::internalJoinThread(QString path) {
 ///--------------------------------------------///
 
 QHotLoadImageBay::QHotLoadImageBay() : QObject(), lastDirection(D_NEUTRAL) {
+    qsrand(time(0));
     QObject::connect(&qiltp, SIGNAL(loadSuccess(QString,QImage)), this, SLOT(handleSuccess(QString,QImage)), Qt::DirectConnection);
     QObject::connect(&qiltp, SIGNAL(loadFailed(QString)), this, SLOT(handleFailure(QString)), Qt::DirectConnection);
     this->startTimer(50);
