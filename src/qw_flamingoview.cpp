@@ -3,22 +3,9 @@
 #include <QDir>
 #include <QImageReader>
 #include <QtWidgets>
+#include <QtConcurrent/QtConcurrent>
 
-static void recurseThroughQDir(QFileInfoList &qfil, const QDir &D, int iter = std::numeric_limits<int>::max()) {
-    for (QFileInfo file : D.entryInfoList(QDir::Files)) {
-        qfil.append(file);
-    }
-    iter--;
-    if (iter <= 0) return;
-    for (QFileInfo infoDir : D.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-        QDir dir = QDir(infoDir.canonicalFilePath());
-        recurseThroughQDir(qfil, dir, iter);
-    }
-}
-
-QFlamingoView::QFlamingoView(QFileInfoArgumentList fi, QWidget *parent) : QImageView(parent) {
-    QObject::connect(&qhlib, SIGNAL(activeStatusUpdate(QString)), this, SLOT(handleQHLIStatus(QString)));
-    QObject::connect(&qhlib, SIGNAL(activeLoaded(QImage)), this, SLOT(flamSetImage(QImage)));
+void QFlamingoView::internalProcessArgs(QFileInfoArgumentList fi) {
     if (fi.length() == 0) {
         QDir dir = QDir::current();
         for (QFileInfo file : dir.entryInfoList(QDir::Files)) {
@@ -35,15 +22,8 @@ QFlamingoView::QFlamingoView(QFileInfoArgumentList fi, QWidget *parent) : QImage
             qhlib.skipTo(file);
         } else {
             QDir dir = QDir(file.canonicalFilePath());
-            if (file.isRecursive()) {
-                QFileInfoList qfil;
-                recurseThroughQDir(qfil, dir);
-                for (QFileInfo file2 : qfil)
-                    qhlib.add(file2);
-            }
-            for (QFileInfo file : dir.entryInfoList(QDir::Files)) {
-                qhlib.add(file);
-            }
+            QFileInfoList qfil;
+            recurseThroughQDir(qfil, dir, file.isRecursive() ? std::numeric_limits<int>::max() : 1);
         }
     } else {
         for (QFileInfoArgument info : fi) {
@@ -52,15 +32,36 @@ QFlamingoView::QFlamingoView(QFileInfoArgumentList fi, QWidget *parent) : QImage
                     qhlib.add(info);
                 } else {
                     QDir dir = QDir(info.canonicalFilePath());
-                    for (QFileInfo file : dir.entryInfoList(QDir::Files)) {
-                        qhlib.add(file);
-                    }
+                    QFileInfoList qfil;
+                    recurseThroughQDir(qfil, dir, info.isRecursive() ? std::numeric_limits<int>::max() : 1);
                 }
             }
         }
-
     }
-    this->setImage(qhlib.current());
+}
+
+void QFlamingoView::recurseThroughQDir(QFileInfoList &qfil, const QDir &D, int iter) {
+    for (QFileInfo file : D.entryInfoList(QDir::Files)) {
+        qhlib.add(file);
+    }
+    iter--;
+    if (iter <= 0) return;
+    emit statusUpdate(QString(D.canonicalPath()));
+    for (QFileInfo infoDir : D.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        if (abort) return;
+        QDir dir = QDir(infoDir.canonicalFilePath());
+        recurseThroughQDir(qfil, dir, iter);
+    }
+}
+
+QFlamingoView::QFlamingoView(QWidget *parent) : QImageView(parent) {
+    QObject::connect(&qhlib, SIGNAL(imageChanged(QString)), this, SIGNAL(imageChanged(QString)));
+    QObject::connect(&qhlib, SIGNAL(activeStatusUpdate(QString)), this, SLOT(handleQHLIStatus(QString)));
+    QObject::connect(&qhlib, SIGNAL(activeLoaded(QImage)), this, SLOT(flamSetImage(QImage)));
+}
+
+void QFlamingoView::processArgumentList(QFileInfoArgumentList fi) {
+    QtConcurrent::run(this, &QFlamingoView::internalProcessArgs, fi);
 }
 
 void QFlamingoView::hideEvent(QHideEvent *) {

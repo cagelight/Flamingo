@@ -114,6 +114,7 @@ void QHotLoadImageBay::timerEvent(QTimerEvent *) {
                     continue;
                 case QILTP::PATH_FAILURE:
                     this->remove(i);
+                    if (i < index) this->internalPrevious();
                     return;
                 case QILTP::PATH_INSUFFICIENT_MEMORY:
                     iter.toBack();
@@ -139,6 +140,7 @@ void QHotLoadImageBay::timerEvent(QTimerEvent *) {
 
 void QHotLoadImageBay::add(QFileInfo info) {
     this->imgList.append(std::make_tuple(QImage(), info, false));
+    if (imgList.length() == 1) emit imageChanged(std::get<1>(imgList.at(0)).fileName());
 }
 
 QImage QHotLoadImageBay::current() {
@@ -188,6 +190,7 @@ QImage QHotLoadImageBay::skipTo(QFileInfo fi) {
         if (lfi == fi) {
             index = i;
             this->internalSettleIndex();
+            emit imageChanged(lfi.fileName());
             return current();
         }
     }

@@ -17,6 +17,7 @@ signals:
     void closed();
 private slots:
     void handleStatusUpdate(QString);
+    void handleImageChange(QString);
     void startSlideshow();
     void stopSlideshow();
 private: //Widgets

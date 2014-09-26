@@ -2,16 +2,21 @@
 #include "qw_flamingoview.hpp"
 
 FlamingoMainWindow::FlamingoMainWindow(QFileInfoArgumentList infos) : FlamingoMainWindow() {
-    fview = new QFlamingoView(infos, this);
+    this->showMaximized();
+    fview = new QFlamingoView(this);
     fview->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     layoutMain->addWidget(fview, 0, 0, 1, 2);
     QObject::connect(fview, SIGNAL(statusUpdate(QString)), this, SLOT(handleStatusUpdate(QString)));
+    QObject::connect(fview, SIGNAL(imageChanged(QString)), this, SLOT(handleImageChange(QString)));
+    fview->processArgumentList(infos);
     ssTimer->setTimerType(Qt::VeryCoarseTimer);
+    fview->show();
+    fview->setFocus();
 }
 
 FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     this->setMinimumSize(400, 300);
-    this->setGeometry(QApplication::desktop()->availableGeometry());
+    //this->setGeometry(QApplication::desktop()->availableGeometry());
     ssSpin->setMinimum(1);
     ssSpin->setMaximum(std::numeric_limits<int>::max() / 1000);
     QObject::connect(ssStart, SIGNAL(released()), this, SLOT(startSlideshow()));
@@ -36,6 +41,7 @@ void FlamingoMainWindow::closeEvent(QCloseEvent *QCE) {
 void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
     switch(QKE->key()) {
     case Qt::Key_Escape:
+        fview->abortLoad();
         this->close();
         break;
     case Qt::Key_Right:
@@ -81,6 +87,10 @@ void FlamingoMainWindow::wheelEvent(QWheelEvent * QWE) {
 
 void FlamingoMainWindow::handleStatusUpdate(QString str) {
     this->istatbar->showMessage(str);
+}
+
+void FlamingoMainWindow::handleImageChange(QString str) {
+    this->setWindowTitle(QString("Flamingo: ") + str);
 }
 
 void FlamingoMainWindow::startSlideshow() {

@@ -41,7 +41,6 @@ FlamingoCore::FlamingoCore(int &argc, char **&argv): QApplication(argc, argv) {
         windowMain = new FlamingoMainWindow(qfil);
     } else {
         windowMain = new FlamingoMainWindow(QFileInfoArgumentList({QFileInfoArgument(QDir::currentPath(), false)}));
-    }
-    //windowMain->showMaximized();
+    };
     QObject::connect(windowMain, SIGNAL(closed()), this, SLOT(quit()));
 }

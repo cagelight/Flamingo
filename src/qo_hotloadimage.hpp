@@ -56,6 +56,7 @@ public:
     QImage random();
     QImage skipTo(QFileInfo);
 signals:
+    void imageChanged(QString);
     void activeLoaded(QImage);
     void activeFailed();
     void activeStatusUpdate(QString);
@@ -87,9 +88,18 @@ private:
             return 0;
         }
     }
-    void internalNext() {index = internalGetNextIndex();}
-    void internalPrevious() {index = internalGetPreviousIndex();}
-    void internalRandom() {index = qrand() % imgList.length();}
+    void internalNext() {
+        index = internalGetNextIndex();
+        emit imageChanged(std::get<1>(imgList.at(index)).fileName());
+    }
+    void internalPrevious() {
+        index = internalGetPreviousIndex();
+        emit imageChanged(std::get<1>(imgList.at(index)).fileName());
+    }
+    void internalRandom() {
+        index = qrand() % imgList.length();
+        emit imageChanged(std::get<1>(imgList.at(index)).fileName());
+    }
     void internalSettleIndex() {internalNext(); internalPrevious();}
     void unload(int index);
     void remove(int index);

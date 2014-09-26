@@ -14,11 +14,14 @@
 class QFlamingoView : public QImageView {
     Q_OBJECT
 public: //Methods
-    QFlamingoView(QFileInfoArgumentList fi, QWidget *parent = 0);
+    QFlamingoView(QWidget *parent = 0);
     void hideEvent(QHideEvent *);
     void showEvent(QShowEvent *);
+    void processArgumentList(QFileInfoArgumentList fi);
+    void abortLoad() {abort = true;} //Does nothing if arguments are not being processed.
 signals:
     void statusUpdate(QString);
+    void imageChanged(QString);
 public slots:
     void Next();
     void Prev();
@@ -27,8 +30,11 @@ private slots:
     void handleQHLIStatus(QString);
     void flamSetImage(QImage);
 private:
+    void internalProcessArgs(QFileInfoArgumentList fi);
+    void recurseThroughQDir(QFileInfoList&, const QDir&, int iter = std::numeric_limits<int>::max());
     QHotLoadImageBay qhlib;
     bool activeState = false;
+    bool abort = false; //Used for aborting long argument load sequences (in the case of recursive loading.)
 };
 
 #endif // QO_FLAMINGOVIEWMGR_HPP
