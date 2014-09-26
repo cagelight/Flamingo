@@ -90,15 +90,17 @@ private:
     }
     void internalNext() {
         index = internalGetNextIndex();
-        emit imageChanged(std::get<1>(imgList.at(index)).fileName());
+        if (imgList.length() > 0) emit imageChanged(std::get<1>(imgList.at(index)).fileName());
     }
     void internalPrevious() {
         index = internalGetPreviousIndex();
-        emit imageChanged(std::get<1>(imgList.at(index)).fileName());
+        if (imgList.length() > 0) emit imageChanged(std::get<1>(imgList.at(index)).fileName());
     }
     void internalRandom() {
-        index = qrand() % imgList.length();
-        emit imageChanged(std::get<1>(imgList.at(index)).fileName());
+        if (imgList.length() > 0) {
+            index = qrand() % imgList.length();
+            emit imageChanged(std::get<1>(imgList.at(index)).fileName());
+        }
     }
     void internalSettleIndex() {internalNext(); internalPrevious();}
     void unload(int index);
