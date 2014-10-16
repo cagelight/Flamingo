@@ -71,6 +71,22 @@ void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
         else
             this->startSlideshow();
         break;
+    case Qt::Key_F:
+        if ((this->windowState() & Qt::WindowFullScreen) == Qt::WindowFullScreen)
+            this->setWindowState(this->windowState() & ~Qt::WindowFullScreen);
+        else
+            this->setWindowState(this->windowState() | Qt::WindowFullScreen);
+        this->show();
+        break;
+    case Qt::Key_W:
+        if ((this->windowState() & Qt::WindowFullScreen) != Qt::WindowFullScreen) {
+            if (this->windowFlags() & Qt::FramelessWindowHint)
+                this->setWindowFlags(this->windowFlags() & ~Qt::FramelessWindowHint);
+            else
+                this->setWindowFlags(this->windowFlags() | Qt::FramelessWindowHint);
+            this->show();
+        }
+        break;
     }
 }
 
