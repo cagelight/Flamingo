@@ -73,7 +73,7 @@ void QFlamingoArgManager::setupViews() {
             fileViewArgMap[&qfia] = fArg;
         } else {
             nArg->setIcon(getQFIAIcon(qfia));
-            dirSetupList.append(QFIASplit(qfia, qfia.canonicalFilePath().split(QDir::separator(), QString::SkipEmptyParts)));
+            dirSetupList.append(QFIASplit(qfia, (QDir::toNativeSeparators(qfia.canonicalFilePath())).split(QDir::separator(), QString::SkipEmptyParts)));
         }
     }
     int rCount = 0;
