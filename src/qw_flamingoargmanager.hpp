@@ -16,10 +16,14 @@ protected slots:
     void handleDirItemDoubleClicked(QTreeWidgetItem *, int);
     void handleFileItemDoubleClicked(QListWidgetItem *);
     void handleArgItemDoubleClicked(QListWidgetItem *);
+    void addNewArgFile();
+    void addNewArgDir();
     void finalizeUpdates();
     void discardUpdates();
+    void saveToFile();
+    void loadFromFile();
 protected:
-    void showEvent(QShowEvent * QSE) {this->setupViews(); QDialog::showEvent(QSE);}
+    void showEvent(QShowEvent * QSE) {argsPrev = args; this->setupViews(); QDialog::showEvent(QSE);}
     void hideEvent(QHideEvent * QHE) {this->clear(); QDialog::hideEvent(QHE);}
     void closeEvent(QCloseEvent * QCE) {this->clear(); QDialog::closeEvent(QCE);}
     void dragEnterEvent(QDragEnterEvent* event);
@@ -43,6 +47,7 @@ private:
 
     typedef std::pair<QFileInfoArgument &, QStringList> QFIASplit;
     void clear();
+    QIcon getQFIAIcon(QFileInfoArgument &);
     QGridLayout * layout = new QGridLayout(this);
     QTreeWidget * dirView = new QTreeWidget(this);
     QList<QTreeWidgetItem *> dirViewTopItems;
@@ -53,6 +58,7 @@ private:
     QList<QListWidgetItem *> argViewItems;
     QFileInfoArgumentList argsPrev;
     QFileInfoArgumentList args;
+    QUrl cDir;
     QList<QFileInfoArgument *> argsMarkedDelete;
     QMap<QFileInfoArgument *, QArgDirTreeWidgetItem *> dirViewArgMap;
     QMap<QFileInfoArgument *, QArgFileListWidgetItem *> fileViewArgMap;

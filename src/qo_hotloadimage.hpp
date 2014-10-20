@@ -51,7 +51,7 @@ public:
     QHotLoadImageBay();
     void timerEvent(QTimerEvent*);
     void add(QFileInfo);
-    void clear() {bool p = activationState; activationState = false; qiltp.joinAll(); index = 0; imgList.clear(); activationState = p;}
+    void clear();
     QImage current();
     QImage next();
     QImage previous();
@@ -107,6 +107,7 @@ private:
     void internalSettleIndex() {internalNext(); internalPrevious();}
     void unload(int index);
     void remove(int index);
+    void unloadAll();
     int index = 0;
     QImageLoadThreadPool qiltp;
     bool activationState = false;

@@ -268,3 +268,18 @@ void QHotLoadImageBay::remove(int i) {
     imgList.removeAt(i);
     this->internalSettleIndex();
 }
+
+void QHotLoadImageBay::clear() {
+     bool p = activationState;
+     activationState = false;
+     qiltp.joinAll();
+     this->unloadAll();
+     index = 0;
+     imgList.clear();
+     activationState = p;
+}
+
+void QHotLoadImageBay::unloadAll() {
+    for (int i = 0; i < imgList.length(); i++)
+        this->unload(i);
+}
