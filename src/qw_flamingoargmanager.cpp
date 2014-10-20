@@ -310,7 +310,7 @@ void QFlamingoArgManager::saveToFile() {
     typedef struct {bool rec; QByteArray arry;} qfiapair;
     QString path = QFileDialog::getSaveFileName(this, QString(), QDir::currentPath(), tr("Flamingo Load Instruction Data (*.flid)"));
 #ifdef Q_OS_WIN32
-    f (!path.endsWith(".flid")) path.append(".flid");
+    if (!path.endsWith(".flid")) path.append(".flid");
 #endif
     if (!path.isEmpty()) {
         QList<qfiapair> wpaths;

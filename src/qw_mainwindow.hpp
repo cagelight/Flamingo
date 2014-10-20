@@ -44,6 +44,7 @@ private: //Widgets
     QAction * slideRandAction = nullptr;
     QAction * mwindowBorder = nullptr;
     QTimer * slideshowTimer = new QTimer(this);
+    QAction * fileArgAction = nullptr;
     //Arg
     QFlamingoArgManager * argManager = nullptr;
 private: //Key Sequences

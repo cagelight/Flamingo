@@ -12,6 +12,7 @@ FlamingoMainWindow::FlamingoMainWindow(QFileInfoArgumentList infos) : FlamingoMa
     fview->processArgumentList(infos);
     argManager = new QFlamingoArgManager(infos, this);
     QObject::connect(argManager, SIGNAL(updateFinalized(QFileInfoArgumentList)), this, SLOT(reloadArguments(QFileInfoArgumentList)));
+    QObject::connect(fileArgAction, SIGNAL(triggered()), argManager, SLOT(show()));
     QObject::connect(slideshowTimer, SIGNAL(timeout()), this, SLOT(slideshowNext()));
     slideshowTimer->setTimerType(Qt::VeryCoarseTimer);
     fview->show();
@@ -33,6 +34,8 @@ FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     QAction * closeAction = fileMenu->addAction("Close");
     closeAction->setShortcut(Qt::Key_Escape);
     QObject::connect(closeAction, SIGNAL(triggered()), this, SLOT(close()));
+    fileArgAction = fileMenu->addAction("Argument Mgr");
+    fileArgAction->setShortcut(Qt::CTRL + Qt::Key_A);
 
     QMenu * mwindowmenu = menu->addMenu("Window");
     QAction * mwindowHide = mwindowmenu->addAction("Hide");
@@ -91,9 +94,6 @@ void FlamingoMainWindow::wheelEvent(QWheelEvent * QWE) {
 }
 
 void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
-    if (QKE->key() == Qt::Key_A) {
-        argManager->show();
-    }
     if (istatbar->isHidden()) {
         switch (QKE->key()) {
         case Qt::Key_Escape:
