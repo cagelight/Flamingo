@@ -5,6 +5,16 @@
 #include <QtWidgets>
 #include <QtConcurrent/QtConcurrent>
 
+QFlamingoView::QFlamingoView(QWidget *parent) : QImageView(parent) {
+    QObject::connect(&qhlib, SIGNAL(imageChanged(QString)), this, SIGNAL(imageChanged(QString)));
+    QObject::connect(&qhlib, SIGNAL(activeStatusUpdate(QString)), this, SLOT(handleQHLIStatus(QString)));
+    QObject::connect(&qhlib, SIGNAL(activeLoaded(QImage)), this, SLOT(flamSetImage(QImage)));
+}
+
+void QFlamingoView::processArgumentList(QFileInfoArgumentList fi) {
+    QtConcurrent::run(this, &QFlamingoView::internalProcessArgs, fi);
+}
+
 void QFlamingoView::internalProcessArgs(QFileInfoArgumentList fi) {
     if (fi.length() == 0) {
         QDir dir = QDir::current();
@@ -52,16 +62,6 @@ void QFlamingoView::recurseThroughQDir(QFileInfoList &qfil, const QDir &D, int i
         QDir dir = QDir(infoDir.canonicalFilePath());
         recurseThroughQDir(qfil, dir, iter);
     }
-}
-
-QFlamingoView::QFlamingoView(QWidget *parent) : QImageView(parent) {
-    QObject::connect(&qhlib, SIGNAL(imageChanged(QString)), this, SIGNAL(imageChanged(QString)));
-    QObject::connect(&qhlib, SIGNAL(activeStatusUpdate(QString)), this, SLOT(handleQHLIStatus(QString)));
-    QObject::connect(&qhlib, SIGNAL(activeLoaded(QImage)), this, SLOT(flamSetImage(QImage)));
-}
-
-void QFlamingoView::processArgumentList(QFileInfoArgumentList fi) {
-    QtConcurrent::run(this, &QFlamingoView::internalProcessArgs, fi);
 }
 
 void QFlamingoView::hideEvent(QHideEvent *) {

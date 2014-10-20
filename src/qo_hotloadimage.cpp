@@ -44,6 +44,12 @@ QImageLoadThreadPool::PATH_STATUS QImageLoadThreadPool::load(QString path, int &
     return status;
 }
 
+void QImageLoadThreadPool::joinAll() {
+    for (LoadThread &lt : workers) {
+        if (lt.second->joinable()) lt.second->join();
+    }
+}
+
 void QImageLoadThreadPool::internalThreadEnd(QString path, QImage img) {
     this->internalJoinThread(path);
     controlExternal.lock();

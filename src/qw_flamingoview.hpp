@@ -18,6 +18,7 @@ public: //Methods
     void hideEvent(QHideEvent *);
     void showEvent(QShowEvent *);
     void processArgumentList(QFileInfoArgumentList fi);
+    void clear() {qhlib.clear();}
     void abortLoad() {abort = true;} //Does nothing if arguments are not being processed.
 signals:
     void statusUpdate(QString);

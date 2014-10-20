@@ -26,6 +26,7 @@ public:
     void takeControl() {controlExternal.lock();}
     void releaseControl() {controlExternal.unlock();}
     PATH_STATUS load(QString, int &bytesLoaded);
+    void joinAll();
 signals:
     void loadSuccess(QString, QImage);
     void loadFailed(QString);
@@ -50,6 +51,7 @@ public:
     QHotLoadImageBay();
     void timerEvent(QTimerEvent*);
     void add(QFileInfo);
+    void clear() {bool p = activationState; activationState = false; qiltp.joinAll(); index = 0; imgList.clear(); activationState = p;}
     QImage current();
     QImage next();
     QImage previous();

@@ -1,93 +1,82 @@
 #include "qw_mainwindow.hpp"
 #include "qw_flamingoview.hpp"
+#include "qw_flamingoargmanager.hpp"
 
 FlamingoMainWindow::FlamingoMainWindow(QFileInfoArgumentList infos) : FlamingoMainWindow() {
     this->showMaximized();
     fview = new QFlamingoView(this);
     fview->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    layoutMain->addWidget(fview, 0, 0, 1, 2);
+    layoutMain->addWidget(fview, 1, 0, 1, 2);
     QObject::connect(fview, SIGNAL(statusUpdate(QString)), this, SLOT(handleStatusUpdate(QString)));
     QObject::connect(fview, SIGNAL(imageChanged(QString)), this, SLOT(handleImageChange(QString)));
     fview->processArgumentList(infos);
-    ssTimer->setTimerType(Qt::VeryCoarseTimer);
+    argManager = new QFlamingoArgManager(infos, this);
+    QObject::connect(argManager, SIGNAL(updateFinalized(QFileInfoArgumentList)), this, SLOT(reloadArguments(QFileInfoArgumentList)));
+    QObject::connect(slideshowTimer, SIGNAL(timeout()), this, SLOT(slideshowNext()));
+    slideshowTimer->setTimerType(Qt::VeryCoarseTimer);
     fview->show();
     fview->setFocus();
 }
 
 FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     this->setMinimumSize(400, 300);
-    //this->setGeometry(QApplication::desktop()->availableGeometry());
-    ssSpin->setMinimum(1);
-    ssSpin->setMaximum(std::numeric_limits<int>::max() / 1000);
-    QObject::connect(ssStart, SIGNAL(released()), this, SLOT(startSlideshow()));
-    //Layouting
-    layoutSS->setMargin(4);
-    layoutSS->addWidget(ssLabel);
-    layoutSS->addWidget(ssSpin);
-    layoutSS->addWidget(ssLabelSec);
-    layoutSS->addWidget(ssShuffle);
-    layoutSS->addWidget(ssStart);
-    widgetSS->setLayout(layoutSS);
-    layoutMain->addWidget(widgetSS, 1, 0);
-    layoutMain->addWidget(istatbar, 1, 1);
+    //Menu Bar
+    slideshowIntervalDialog->setLayout(new QGridLayout(this));
+    slideshowIntervalSpinbox->setMinimum(1);
+    slideshowIntervalSpinbox->setMaximum(std::numeric_limits<int>::max() / 1000);
+    slideshowIntervalDialog->layout()->addWidget(slideshowIntervalSpinbox);
+    QPushButton * slideshowIntervalCloseButton = new QPushButton("OK", slideshowIntervalDialog);
+    slideshowIntervalDialog->layout()->addWidget(slideshowIntervalCloseButton);
+    QObject::connect(slideshowIntervalCloseButton, SIGNAL(released()), slideshowIntervalDialog, SLOT(close()));
+
+    QMenu * fileMenu = menu->addMenu("File");
+    QAction * closeAction = fileMenu->addAction("Close");
+    closeAction->setShortcut(Qt::Key_Escape);
+    QObject::connect(closeAction, SIGNAL(triggered()), this, SLOT(close()));
+
+    QMenu * mwindowmenu = menu->addMenu("Window");
+    QAction * mwindowHide = mwindowmenu->addAction("Hide");
+    mwindowHide->setShortcut(Qt::Key_H);
+    QObject::connect(mwindowHide, SIGNAL(triggered()), this, SLOT(toggleHidden()));
+    QAction * mwindowFullscreen = mwindowmenu->addAction("Fullscreen");
+    mwindowFullscreen->setCheckable(true);
+    mwindowFullscreen->setShortcut(Qt::CTRL + Qt::Key_F);
+    QObject::connect(mwindowFullscreen, SIGNAL(toggled(bool)), this, SLOT(toggleFullscreen(bool)));
+    mwindowBorder = mwindowmenu->addAction("Borderless");
+    mwindowBorder->setCheckable(true);
+    mwindowBorder->setShortcut(Qt::CTRL + Qt::Key_B);
+    QObject::connect(mwindowBorder, SIGNAL(toggled(bool)), this, SLOT(toggleBorder(bool)));
+
+    QMenu * navigationMenu = menu->addMenu("Navigation");
+    QAction * navigationNext = navigationMenu->addAction("Next");
+    navigationNext->setShortcut(keyNavigationNext);
+    QObject::connect(navigationNext, SIGNAL(triggered()), this, SLOT(next()));
+    QAction * navigationPrev = navigationMenu->addAction("Previous");
+    navigationPrev->setShortcut(keyNavigationPrev);
+    QObject::connect(navigationPrev, SIGNAL(triggered()), this, SLOT(previous()));
+    QAction * navigationRand = navigationMenu->addAction("Random");
+    navigationRand->setShortcut(keyNavigationRand);
+    QObject::connect(navigationRand, SIGNAL(triggered()), this, SLOT(random()));
+
+    QMenu * slideshowMenu = menu->addMenu("Slideshow");
+    slideshowStartAction = slideshowMenu->addAction("Start");
+    slideshowStartAction->setShortcut(Qt::SHIFT + Qt::Key_S);
+    QObject::connect(slideshowStartAction, SIGNAL(triggered()), this, SLOT(toggleSlideshow()));
+    slideRandAction = slideshowMenu->addAction("Shuffle");
+    slideRandAction->setShortcut(Qt::SHIFT + Qt::Key_R);
+    QAction * slideIntervalAction = slideshowMenu->addAction("Interval");
+    slideIntervalAction->setShortcut(Qt::SHIFT + Qt::Key_I);
+    QObject::connect(slideIntervalAction, SIGNAL(triggered()), slideshowIntervalDialog, SLOT(show()));
+    slideRandAction->setCheckable(true);
+    //Main
+    layoutMain->addWidget(menu, 0, 0, 1, 2);
+    layoutMain->addWidget(istatbar, 3, 0, 1, 2);
     layoutMain->setMargin(0);
 }
 
 void FlamingoMainWindow::closeEvent(QCloseEvent *QCE) {
     QWidget::closeEvent(QCE);
     emit closed();
-}
-
-void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
-    switch(QKE->key()) {
-    case Qt::Key_Escape:
-        fview->abortLoad();
-        this->close();
-        break;
-    case Qt::Key_Right:
-        this->stopSlideshow();
-        fview->Next();
-        break;
-    case Qt::Key_Left:
-        this->stopSlideshow();
-        fview->Prev();
-        break;
-    case Qt::Key_R:
-        this->stopSlideshow();
-        fview->Rand();
-        break;
-    case Qt::Key_H:
-        if(widgetSS->isHidden()) {
-            this->istatbar->show();
-            this->widgetSS->show();
-        } else {
-            this->istatbar->hide();
-            this->widgetSS->hide();
-        }
-        break;
-    case Qt::Key_S:
-        if (ssTimer->isActive())
-            this->stopSlideshow();
-        else
-            this->startSlideshow();
-        break;
-    case Qt::Key_F:
-        if ((this->windowState() & Qt::WindowFullScreen) == Qt::WindowFullScreen)
-            this->setWindowState(this->windowState() & ~Qt::WindowFullScreen);
-        else
-            this->setWindowState(this->windowState() | Qt::WindowFullScreen);
-        this->show();
-        break;
-    case Qt::Key_W:
-        if ((this->windowState() & Qt::WindowFullScreen) != Qt::WindowFullScreen) {
-            if (this->windowFlags() & Qt::FramelessWindowHint)
-                this->setWindowFlags(this->windowFlags() & ~Qt::FramelessWindowHint);
-            else
-                this->setWindowFlags(this->windowFlags() | Qt::FramelessWindowHint);
-            this->show();
-        }
-        break;
-    }
 }
 
 void FlamingoMainWindow::wheelEvent(QWheelEvent * QWE) {
@@ -101,6 +90,29 @@ void FlamingoMainWindow::wheelEvent(QWheelEvent * QWE) {
     }
 }
 
+void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
+    if (QKE->key() == Qt::Key_A) {
+        argManager->show();
+    }
+    if (istatbar->isHidden()) {
+        switch (QKE->key()) {
+        case Qt::Key_Escape:
+        case Qt::Key_H:
+            this->toggleHidden();
+            break;
+        case keyNavigationNext:
+            this->next();
+            break;
+        case keyNavigationPrev:
+            this->previous();
+            break;
+        case keyNavigationRand:
+            this->random();
+            break;
+        }
+    }
+}
+
 void FlamingoMainWindow::handleStatusUpdate(QString str) {
     this->istatbar->showMessage(str);
 }
@@ -110,32 +122,80 @@ void FlamingoMainWindow::handleImageChange(QString str) {
 }
 
 void FlamingoMainWindow::startSlideshow() {
-    ssStart->disconnect();
-    QObject::connect(ssStart, SIGNAL(released()), this, SLOT(stopSlideshow()));
-    ssStart->setText("Stop");
-    if (!ssTimer->isActive()) {
-        QPalette pal = ssStart->palette();
-        pal.setColor(QPalette::Button, QColor(255, 0, 0));
-        ssStart->setPalette(pal);
-    } else {
-        ssTimer->stop();
-        ssTimer->disconnect();
+    slideshowStartAction->setText("Stop");
+    if (slideshowTimer->isActive()) {
+        slideshowTimer->stop();
     }
-    if (ssShuffle->isChecked()) {
-        QObject::connect(ssTimer, SIGNAL(timeout()), fview, SLOT(Rand()));
-    } else {
-        QObject::connect(ssTimer, SIGNAL(timeout()), fview, SLOT(Next()));
-    }
-    ssTimer->start(ssSpin->value() * 1000);
+    slideshowTimer->start(slideshowIntervalSpinbox->value() * 1000);
 }
 
 void FlamingoMainWindow::stopSlideshow() {
-    ssStart->disconnect();
-    QObject::connect(ssStart, SIGNAL(released()), this, SLOT(startSlideshow()));
-    ssStart->setText("Start");
-    if (ssTimer->isActive()) {
-        ssStart->setPalette(QApplication::palette());
-        ssTimer->stop();
-        ssTimer->disconnect();
+    slideshowStartAction->setText("Start");
+    slideshowTimer->stop();
+}
+
+void FlamingoMainWindow::toggleSlideshow() {
+    if (slideshowTimer->isActive())
+        this->stopSlideshow();
+    else
+        this->startSlideshow();
+}
+
+void FlamingoMainWindow::next() {
+    this->stopSlideshow();
+    fview->Next();
+}
+
+void FlamingoMainWindow::previous() {
+    this->stopSlideshow();
+    fview->Prev();
+}
+
+void FlamingoMainWindow::random() {
+    this->stopSlideshow();
+    fview->Rand();
+}
+
+void FlamingoMainWindow::toggleHidden() {
+    if(istatbar->isHidden()) {
+        this->istatbar->show();
+        this->menu->setVisible(true);
+    } else {
+        this->istatbar->hide();
+        this->menu->setHidden(true);
     }
+}
+
+void FlamingoMainWindow::toggleFullscreen(bool flag) {
+    if (flag) {
+        mwindowBorder->setEnabled(false);
+        this->setWindowState(this->windowState() | Qt::WindowFullScreen);
+    } else {
+        mwindowBorder->setEnabled(true);
+        this->setWindowState(this->windowState() & ~Qt::WindowFullScreen);
+    }
+    this->show();
+}
+
+void FlamingoMainWindow::toggleBorder(bool flag) {
+    //if ((this->windowState() & Qt::WindowFullScreen) != Qt::WindowFullScreen) {
+    if (flag)
+        this->setWindowFlags(this->windowFlags() | Qt::FramelessWindowHint);
+    else
+        this->setWindowFlags(this->windowFlags() & ~Qt::FramelessWindowHint);
+    this->show();
+   // }
+}
+
+void FlamingoMainWindow::slideshowNext() {
+    if (slideRandAction->isChecked()) {
+        fview->Rand();
+    } else {
+        fview->Next();
+    }
+}
+
+void FlamingoMainWindow::reloadArguments(QFileInfoArgumentList qfial) {
+    fview->clear();
+    fview->processArgumentList(qfial);
 }
