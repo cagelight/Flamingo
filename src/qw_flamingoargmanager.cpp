@@ -52,7 +52,15 @@ void QFlamingoArgManager::dropEvent(QDropEvent *QDE) {
     int o = args.length();
     if (QDE->mimeData()->hasUrls()) {
         for (QUrl const & url : QDE->mimeData()->urls()) {
-            this->args.append(QFileInfoArgument(url.toLocalFile()));
+            QFileInfoArgument nArg = QFileInfoArgument(url.toLocalFile());
+            bool eFlag = false;
+            for (QFileInfoArgument const & qfia : args) {
+                if (qfia.canonicalFilePath() == nArg.canonicalFilePath()) eFlag = true;
+            }
+            if (!eFlag) {
+                args.append(nArg);
+                this->setupViews();
+            }
         }
     }
     if (o != args.length()) this->setupViews();
@@ -274,8 +282,17 @@ void QFlamingoArgManager::addNewArgFile() {
     qDebug() << cDir;
     QList<QUrl> nArgs = QFileDialog::getOpenFileUrls(this, tr("Add Files"), cDir);
     for (QUrl const & arg : nArgs) {
-        if (!arg.isEmpty())
-            args.append(QFileInfoArgument(arg.toLocalFile()));
+        if (!arg.isEmpty()) {
+            QFileInfoArgument nArg = QFileInfoArgument(arg.toLocalFile());
+            bool eFlag = false;
+            for (QFileInfoArgument const & qfia : args) {
+                if (qfia.canonicalFilePath() == nArg.canonicalFilePath()) eFlag = true;
+            }
+            if (!eFlag) {
+                args.append(nArg);
+                this->setupViews();
+            }
+        }
     }
     this->setupViews();
 }
@@ -283,8 +300,15 @@ void QFlamingoArgManager::addNewArgFile() {
 void QFlamingoArgManager::addNewArgDir() {
     QUrl arg = QFileDialog::getExistingDirectoryUrl(this);
     if (!arg.isEmpty()) {
-        args.append(QFileInfoArgument(arg.toLocalFile()));
-        this->setupViews();
+        QFileInfoArgument nArg = QFileInfoArgument(arg.toLocalFile());
+        bool eFlag = false;
+        for (QFileInfoArgument const & qfia : args) {
+            if (qfia.canonicalFilePath() == nArg.canonicalFilePath()) eFlag = true;
+        }
+        if (!eFlag) {
+            args.append(nArg);
+            this->setupViews();
+        }
     }
 }
 

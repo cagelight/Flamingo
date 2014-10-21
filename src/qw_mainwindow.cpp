@@ -34,7 +34,7 @@ FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     QAction * closeAction = fileMenu->addAction("Close");
     closeAction->setShortcut(Qt::Key_Escape);
     QObject::connect(closeAction, SIGNAL(triggered()), this, SLOT(close()));
-    fileArgAction = fileMenu->addAction("Argument Mgr");
+    fileArgAction = fileMenu->addAction("Load Manager");
     fileArgAction->setShortcut(Qt::CTRL + Qt::Key_A);
 
     QMenu * mwindowmenu = menu->addMenu("Window");
