@@ -9,6 +9,8 @@ class QFlamingoArgManager : public QDialog {
     Q_OBJECT
 public:
     QFlamingoArgManager(QFileInfoArgumentList, QWidget *parent = 0);
+    static QFileInfoArgumentList QFIALFromFLID(QString const & file);
+    static bool fileIsFLID(QString const & file);
 signals:
     void updateFinalized(QFileInfoArgumentList);
 protected slots:

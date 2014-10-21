@@ -102,7 +102,7 @@ void QFlamingoArgManager::setupViews() {
                 } else cFlag = false;
             } else cFlag = false;
         }
-    } else {
+    } else if (dirSetupList.length() > 0) {
         rCount = dirSetupList.first().second.count();
     }
     rCount -= 2;
@@ -298,7 +298,7 @@ void QFlamingoArgManager::addNewArgFile() {
 }
 
 void QFlamingoArgManager::addNewArgDir() {
-    QUrl arg = QFileDialog::getExistingDirectoryUrl(this);
+    QUrl arg = QFileDialog::getExistingDirectoryUrl(this, tr("Add Directory"), cDir);
     if (!arg.isEmpty()) {
         QFileInfoArgument nArg = QFileInfoArgument(arg.toLocalFile());
         bool eFlag = false;
@@ -345,10 +345,12 @@ void QFlamingoArgManager::saveToFile() {
             cc += s.arry.length();
         cc += (sizeof(int) + sizeof(bool))*args.length();
         cc += sizeof(int);
+        cc += 4;
         char * bytes = new char[cc];
         QByteArray wb(bytes, cc);
         QDataStream writer(&wb, QIODevice::WriteOnly);
         int ac = args.count();
+        writer.writeRawData("FLID", 4);
         writer.writeRawData((const char*)&ac, sizeof(int));
         for (qfiapair const & s : wpaths) {
             writer.writeRawData((const char*)&s.rec, sizeof(bool));
@@ -366,13 +368,23 @@ void QFlamingoArgManager::saveToFile() {
 
 void QFlamingoArgManager::loadFromFile() {
     QString path = QFileDialog::getOpenFileName(this, QString(), QDir::currentPath(), tr("Flamingo Load Instruction Data (*.flid)"));
-    if (!path.isEmpty()) {
+    QFileInfoArgumentList qfial = QFlamingoArgManager::QFIALFromFLID(path);
+    if (!qfial.isEmpty()) {
         args.clear();
-        QFile open(path);
+        args.append(qfial);
+        this->setupViews();
+    }
+}
+
+QFileInfoArgumentList QFlamingoArgManager::QFIALFromFLID(const QString &file) {
+    QFileInfoArgumentList qfial;
+    if (!file.isEmpty()) {
+        QFile open(file);
         open.open(QIODevice::ReadOnly);
         QByteArray rb = open.readAll();
         QDataStream reader(&rb, QIODevice::ReadOnly);
         int ca = 0;
+        reader.skipRawData(4);
         reader.readRawData((char*)&ca, sizeof(int));
         for (int i = 0; i < ca; i++) {
             bool rec;
@@ -382,9 +394,28 @@ void QFlamingoArgManager::loadFromFile() {
             char * ab = new char[al+1];
             ab[al] = 0x00;
             reader.readRawData(ab, al);
-            args.append(QFileInfoArgument(QString(ab), rec));
+            qfial.append(QFileInfoArgument(QString(ab), rec));
             delete [] ab;
         }
-        this->setupViews();
+    }
+    return qfial;
+}
+
+bool QFlamingoArgManager::fileIsFLID(const QString &file) {
+    if (file.isEmpty()) return false;
+    QFile f(file);
+    if (!f.exists()) return false;
+    if (!f.open(QIODevice::ReadOnly)) return false;
+    char * t4 = new char[4];
+    if (f.read(t4, 4) != 4) {
+        delete [] t4;
+        return false;
+    }
+    if (t4[0] == 'F' && t4[1] == 'L' && t4[2] == 'I' && t4[3] == 'D') {
+        delete [] t4;
+        return true;
+    } else {
+        delete [] t4;
+        return false;
     }
 }
