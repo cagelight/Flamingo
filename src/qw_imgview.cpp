@@ -106,6 +106,19 @@ void QImageView::setImage(const QImage &newView) {
     this->repaint();
 }
 
+void QImageView::setImage(QString const & path, bool threadedLoad) {
+    if (threadedLoad) {
+        if (delayedLoader != nullptr) {
+            if (delayedLoader->joinable()) delayedLoader->join();
+            delete delayedLoader;
+            delayedLoader = nullptr;
+        }
+        delayedLoader = new std::thread(&QImageView::delayedLoad, this, path);
+    }
+    else
+        this->setImage(QImage(path));
+}
+
 void QImageView::handleBilinear(DrawSet d) {
     this->bilinearObject = d;
     QRect &partRectBil = std::get<0>(bilinearObject);

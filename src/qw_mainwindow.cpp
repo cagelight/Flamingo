@@ -36,7 +36,7 @@ FlamingoMainWindow::FlamingoMainWindow() : QMainWindow(0) {
     closeAction->setShortcut(Qt::Key_Escape);
     QObject::connect(closeAction, SIGNAL(triggered()), this, SLOT(close()));
     fileArgAction = fileMenu->addAction("Load Manager");
-    fileArgAction->setShortcut(Qt::CTRL + Qt::Key_A);
+    fileArgAction->setShortcut(Qt::CTRL + Qt::Key_M);
 
     QMenu * mwindowmenu = menu->addMenu("&Window");
     QAction * mwindowHide = mwindowmenu->addAction("Hide");

@@ -73,6 +73,7 @@ public:
     QImage getImage() {return view;}
 public slots:
     void setImage(const QImage&);
+    void setImage(QString const & path, bool threadedLoad = false);
 private slots:
     void handleBilinear(DrawSet);
     void hideMouse() {this->setCursor(Qt::BlankCursor);}
@@ -92,10 +93,12 @@ private: //Variables
     DrawSet bilinearObject;
     QBilinearWorker bilinearWorker;
     QTimer *mouseHider = new QTimer(this);
+    std::thread * delayedLoader = nullptr;
 private: //Methods
     void setZoom(qreal, QPointF focus = QPointF(0, 0));
     void calculateMax();
     void calculateView();
+    void delayedLoad(QString const & path) {QImage nL(path); this->setImage(nL);}
 
 };
 

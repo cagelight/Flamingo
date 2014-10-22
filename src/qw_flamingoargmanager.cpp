@@ -4,16 +4,31 @@
 QFlamingoArgManager::QFlamingoArgManager(QFileInfoArgumentList qfial, QWidget *parent) : QDialog(parent), args(qfial) {
     this->setAcceptDrops(true);
     QWidget * viewWidget = new QWidget(this);
-    new QHBoxLayout(viewWidget);
+    QHBoxLayout * viewLayout = new QHBoxLayout(viewWidget);
+    viewLayout->setMargin(0);
     iView = new QImageView(this);
     viewWidget->layout()->addWidget(argView);
-    viewWidget->layout()->addWidget(dirView);
+
+    QWidget * dirOverWidget = new QWidget(this);
+    QGridLayout * dirOverLayout = new QGridLayout(dirOverWidget);
+    QPushButton * colallButton = new QPushButton("Collapse All", dirOverWidget);
+    QPushButton * expallButton = new QPushButton("Expand All", dirOverWidget);
+    QObject::connect(colallButton, SIGNAL(released()), dirView, SLOT(collapseAll()));
+    QObject::connect(expallButton, SIGNAL(released()), dirView, SLOT(expandAll()));
+    dirOverLayout->setMargin(0);
+    dirOverLayout->addWidget(colallButton, 0, 0);
+    dirOverLayout->addWidget(expallButton, 0, 1);
+    dirOverLayout->addWidget(dirView, 1, 0, 1, 2);
+    dirOverWidget->setSizePolicy(dirView->sizePolicy());
+    viewWidget->layout()->addWidget(dirOverWidget);
+
     viewWidget->layout()->addWidget(iView);
     iView->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
-    iView->setMinimumSize(200, 150);
+    iView->setMinimumSize(300, 225);
     this->layout->addWidget(viewWidget);
     QWidget * buttonWidget = new QWidget(this);
-    new QHBoxLayout(buttonWidget);
+    QHBoxLayout * buttonLayout = new QHBoxLayout(buttonWidget);
+    buttonLayout->setMargin(0);
     QPushButton * revalButton = new QPushButton("OK", buttonWidget);
     QPushButton * closeButton = new QPushButton("Close", buttonWidget);
     QPushButton * addFButton = new QPushButton("Add Files", buttonWidget);
@@ -66,7 +81,6 @@ void QFlamingoArgManager::dropEvent(QDropEvent *QDE) {
             }
             if (!eFlag) {
                 args.append(nArg);
-                this->setupViews();
             }
         }
     }
@@ -74,43 +88,47 @@ void QFlamingoArgManager::dropEvent(QDropEvent *QDE) {
 }
 
 void QFlamingoArgManager::keyPressEvent(QKeyEvent *QPE) {
-    if (QPE->key() == Qt::Key_Delete && dirView->selectedItems().length() > 0) {
-        for (QTreeWidgetItem * pitem : dirView->selectedItems()) {
-            QArgDirTreeWidgetItem * item = (QArgDirTreeWidgetItem *) pitem;
-            if (dirViewArgItems.contains(item)) {
-                if (item->arg.isFile()) {
-                    if (argsMarkedDelete.contains(&item->arg)) {
-                        argsMarkedDelete.removeAll(&item->arg);
-                        QIcon i = getQFIAIcon(item->arg);
-                        item->setIcon(0, i);
-                        argViewArgMap[&item->arg]->setIcon(i);
-                    } else {
-                        argsMarkedDelete.append(&item->arg);
-                        QIcon i = getQFIAIcon(item->arg);
-                        item->setIcon(0, i);
-                        argViewArgMap[&item->arg]->setIcon(i);
-                    }
-                } else {
-                    if (argsMarkedDelete.contains(&item->arg)) {
-                        argsMarkedDelete.removeAll(&item->arg);
-                        item->arg.setRecursive(false);
-                        QIcon i = getQFIAIcon(item->arg);
-                        item->setIcon(0, i);
-                        argViewArgMap[&item->arg]->setIcon(i);
-                    } else if (item->arg.isRecursive()) {
-                        argsMarkedDelete.append(&item->arg);
-                        QIcon i = getQFIAIcon(item->arg);
-                        item->setIcon(0, i);
-                        argViewArgMap[&item->arg]->setIcon(i);
-                    } else {
-                        item->arg.setRecursive(true);
-                        QIcon i = getQFIAIcon(item->arg);
-                        item->setIcon(0, i);
-                        argViewArgMap[&item->arg]->setIcon(i);
+    switch (QPE->key()) {
+    case Qt::Key_Delete:
+        if (dirView->selectedItems().length() > 0) {
+                for (QTreeWidgetItem * pitem : dirView->selectedItems()) {
+                    QArgDirTreeWidgetItem * item = (QArgDirTreeWidgetItem *) pitem;
+                    if (dirViewArgItems.contains(item)) {
+                        if (item->arg.isFile()) {
+                            if (argsMarkedDelete.contains(&item->arg)) {
+                                argsMarkedDelete.removeAll(&item->arg);
+                                QIcon i = getQFIAIcon(item->arg);
+                                item->setIcon(0, i);
+                                argViewArgMap[&item->arg]->setIcon(i);
+                            } else {
+                                argsMarkedDelete.append(&item->arg);
+                                QIcon i = getQFIAIcon(item->arg);
+                                item->setIcon(0, i);
+                                argViewArgMap[&item->arg]->setIcon(i);
+                            }
+                        } else {
+                            if (argsMarkedDelete.contains(&item->arg)) {
+                                argsMarkedDelete.removeAll(&item->arg);
+                                item->arg.setRecursive(false);
+                                QIcon i = getQFIAIcon(item->arg);
+                                item->setIcon(0, i);
+                                argViewArgMap[&item->arg]->setIcon(i);
+                            } else if (item->arg.isRecursive()) {
+                                argsMarkedDelete.append(&item->arg);
+                                QIcon i = getQFIAIcon(item->arg);
+                                item->setIcon(0, i);
+                                argViewArgMap[&item->arg]->setIcon(i);
+                            } else {
+                                item->arg.setRecursive(true);
+                                QIcon i = getQFIAIcon(item->arg);
+                                item->setIcon(0, i);
+                                argViewArgMap[&item->arg]->setIcon(i);
+                            }
+                        }
                     }
                 }
             }
-        }
+        break;
     }
     QDialog::keyPressEvent(QPE);
 }
@@ -216,8 +234,8 @@ void QFlamingoArgManager::setupViews() {
                 }
             }
         }
-        dirView->expandAll();
     }
+    dirView->expandAll();
 }
 
 void QFlamingoArgManager::clear() {
@@ -312,7 +330,7 @@ void QFlamingoArgManager::handleDirItemClicked(QTreeWidgetItem * pitem, int) {
         argView->clearSelection();
         argView->setItemSelected(argViewArgMap[&item->arg], true);
         if (item->arg.isFile()) {
-            iView->setImage(QImage(item->arg.canonicalFilePath()));
+            iView->setImage(item->arg.canonicalFilePath(), true);
         }
     }
 }
@@ -323,7 +341,7 @@ void QFlamingoArgManager::handleArgItemClicked(QListWidgetItem * pitem) {
         dirView->clearSelection();
         dirView->setItemSelected(dirViewArgMap[&item->arg], true);
         if (item->arg.isFile()) {
-            iView->setImage(QImage(item->arg.canonicalFilePath()));
+            iView->setImage(item->arg.canonicalFilePath(), true);
         }
     }
 }
@@ -345,7 +363,6 @@ void QFlamingoArgManager::discardUpdates() {
 }
 
 void QFlamingoArgManager::addNewArgFile() {
-    qDebug() << cDir;
     QList<QUrl> nArgs = QFileDialog::getOpenFileUrls(this, tr("Add Files"), cDir);
     for (QUrl const & arg : nArgs) {
         if (!arg.isEmpty()) {
