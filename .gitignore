@@ -1,4 +1,4 @@
 *.user
 debug
 release
-Makefile
+Makefile*
