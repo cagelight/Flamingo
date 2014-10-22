@@ -6,7 +6,7 @@ FlamingoMainWindow::FlamingoMainWindow(QFileInfoArgumentList infos) : FlamingoMa
     this->showMaximized();
     fview = new QFlamingoView(this);
     fview->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    layoutMain->addWidget(fview, 1, 0, 1, 2);
+    this->setCentralWidget(fview);
     QObject::connect(fview, SIGNAL(statusUpdate(QString)), this, SLOT(handleStatusUpdate(QString)));
     QObject::connect(fview, SIGNAL(imageChanged(QString)), this, SLOT(handleImageChange(QString)));
     fview->processArgumentList(infos);
@@ -15,12 +15,13 @@ FlamingoMainWindow::FlamingoMainWindow(QFileInfoArgumentList infos) : FlamingoMa
     QObject::connect(fileArgAction, SIGNAL(triggered()), argManager, SLOT(show()));
     QObject::connect(slideshowTimer, SIGNAL(timeout()), this, SLOT(slideshowNext()));
     slideshowTimer->setTimerType(Qt::VeryCoarseTimer);
-    fview->show();
     fview->setFocus();
 }
 
-FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
+FlamingoMainWindow::FlamingoMainWindow() : QMainWindow(0) {
     this->setMinimumSize(400, 300);
+    this->setMenuBar(menu);
+    this->setStatusBar(istatbar);
     //Menu Bar
     slideshowIntervalDialog->setLayout(new QGridLayout(this));
     slideshowIntervalSpinbox->setMinimum(1);
@@ -30,14 +31,14 @@ FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     slideshowIntervalDialog->layout()->addWidget(slideshowIntervalCloseButton);
     QObject::connect(slideshowIntervalCloseButton, SIGNAL(released()), slideshowIntervalDialog, SLOT(close()));
 
-    QMenu * fileMenu = menu->addMenu("File");
+    QMenu * fileMenu = menu->addMenu("&File");
     QAction * closeAction = fileMenu->addAction("Close");
     closeAction->setShortcut(Qt::Key_Escape);
     QObject::connect(closeAction, SIGNAL(triggered()), this, SLOT(close()));
     fileArgAction = fileMenu->addAction("Load Manager");
     fileArgAction->setShortcut(Qt::CTRL + Qt::Key_A);
 
-    QMenu * mwindowmenu = menu->addMenu("Window");
+    QMenu * mwindowmenu = menu->addMenu("&Window");
     QAction * mwindowHide = mwindowmenu->addAction("Hide");
     mwindowHide->setShortcut(Qt::Key_H);
     QObject::connect(mwindowHide, SIGNAL(triggered()), this, SLOT(toggleHidden()));
@@ -50,7 +51,7 @@ FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     mwindowBorder->setShortcut(Qt::CTRL + Qt::Key_B);
     QObject::connect(mwindowBorder, SIGNAL(toggled(bool)), this, SLOT(toggleBorder(bool)));
 
-    QMenu * navigationMenu = menu->addMenu("Navigation");
+    QMenu * navigationMenu = menu->addMenu("&Navigation");
     QAction * navigationNext = navigationMenu->addAction("Next");
     navigationNext->setShortcut(keyNavigationNext);
     QObject::connect(navigationNext, SIGNAL(triggered()), this, SLOT(next()));
@@ -61,7 +62,7 @@ FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     navigationRand->setShortcut(keyNavigationRand);
     QObject::connect(navigationRand, SIGNAL(triggered()), this, SLOT(random()));
 
-    QMenu * slideshowMenu = menu->addMenu("Slideshow");
+    QMenu * slideshowMenu = menu->addMenu("&Slideshow");
     slideshowStartAction = slideshowMenu->addAction("Start");
     slideshowStartAction->setShortcut(Qt::SHIFT + Qt::Key_S);
     QObject::connect(slideshowStartAction, SIGNAL(triggered()), this, SLOT(toggleSlideshow()));
@@ -72,9 +73,6 @@ FlamingoMainWindow::FlamingoMainWindow() : QWidget(0) {
     QObject::connect(slideIntervalAction, SIGNAL(triggered()), slideshowIntervalDialog, SLOT(show()));
     slideRandAction->setCheckable(true);
     //Main
-    layoutMain->addWidget(menu, 0, 0, 1, 2);
-    layoutMain->addWidget(istatbar, 3, 0, 1, 2);
-    layoutMain->setMargin(0);
 }
 
 void FlamingoMainWindow::closeEvent(QCloseEvent *QCE) {

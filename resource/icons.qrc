@@ -1,8 +1,9 @@
 <RCC>
     <qresource prefix="/icons">
-        <file>arg_single.png</file>
-        <file>arg_recursive.png</file>
-        <file>arg_delete.png</file>
-        <file>arg_file.png</file>
+        <file>arg_dir_delete.png</file>
+        <file>arg_dir_recursive.png</file>
+        <file>arg_dir_single.png</file>
+        <file>arg_file_delete.png</file>
+        <file>arg_file_normal.png</file>
     </qresource>
 </RCC>

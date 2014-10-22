@@ -4,6 +4,7 @@
 #include "qfileinfoargument.hpp"
 #include <QtWidgets>
 
+class QImageView;
 
 class QFlamingoArgManager : public QDialog {
     Q_OBJECT
@@ -16,8 +17,9 @@ signals:
 protected slots:
     void setupViews();
     void handleDirItemDoubleClicked(QTreeWidgetItem *, int);
-    void handleFileItemDoubleClicked(QListWidgetItem *);
     void handleArgItemDoubleClicked(QListWidgetItem *);
+    void handleDirItemClicked(QTreeWidgetItem *, int);
+    void handleArgItemClicked(QListWidgetItem *);
     void addNewArgFile();
     void addNewArgDir();
     void finalizeUpdates();
@@ -32,6 +34,7 @@ protected:
     void dragMoveEvent(QDragMoveEvent* event);
     void dragLeaveEvent(QDragLeaveEvent* event);
     void dropEvent(QDropEvent *);
+    void keyPressEvent(QKeyEvent *);
 private:
     class QArgDirTreeWidgetItem : public QTreeWidgetItem {
     public:
@@ -52,10 +55,9 @@ private:
     QIcon getQFIAIcon(QFileInfoArgument &);
     QGridLayout * layout = new QGridLayout(this);
     QTreeWidget * dirView = new QTreeWidget(this);
+    QImageView * iView = nullptr;
     QList<QTreeWidgetItem *> dirViewTopItems;
     QList<QArgDirTreeWidgetItem *> dirViewArgItems;
-    QListWidget * fileView = new QListWidget(this);
-    QList<QListWidgetItem *> fileViewItems;
     QListWidget * argView = new QListWidget(this);
     QList<QListWidgetItem *> argViewItems;
     QFileInfoArgumentList argsPrev;
@@ -63,7 +65,6 @@ private:
     QUrl cDir;
     QList<QFileInfoArgument *> argsMarkedDelete;
     QMap<QFileInfoArgument *, QArgDirTreeWidgetItem *> dirViewArgMap;
-    QMap<QFileInfoArgument *, QArgFileListWidgetItem *> fileViewArgMap;
     QMap<QFileInfoArgument *, QArgFileListWidgetItem *> argViewArgMap;
 };
 

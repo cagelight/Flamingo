@@ -8,7 +8,7 @@
 class QFlamingoView;
 class QFlamingoArgManager;
 
-class FlamingoMainWindow : public QWidget {
+class FlamingoMainWindow : public QMainWindow {
     Q_OBJECT
 public: //Methods
     FlamingoMainWindow(QFileInfoArgumentList);
@@ -33,7 +33,6 @@ private slots:
     void reloadArguments(QFileInfoArgumentList);
 private: //Widgets
     FlamingoMainWindow();
-    QGridLayout *layoutMain = new QGridLayout(this);
     QFlamingoView *fview = nullptr;
     QStatusBar *istatbar = new QStatusBar(this);
     //Menu
