@@ -71,10 +71,13 @@ public:
     void mouseReleaseEvent(QMouseEvent *);
     void mouseMoveEvent(QMouseEvent *);
     QImage getImage() {return view;}
+signals:
+    void internalDelayedLoadComplete(QImage);
 public slots:
     void setImage(const QImage&);
     void setImage(QString const & path, bool threadedLoad = false);
 private slots:
+    void setImageInternal(QImage);
     void handleBilinear(DrawSet);
     void hideMouse() {this->setCursor(Qt::BlankCursor);}
     void showMouse() {this->setCursor(Qt::ArrowCursor); mouseHider->start(500);}
@@ -98,7 +101,7 @@ private: //Methods
     void setZoom(qreal, QPointF focus = QPointF(0, 0));
     void calculateMax();
     void calculateView();
-    void delayedLoad(QString const & path) {QImage nL(path); this->setImage(nL);}
+    void delayedLoad(QString const & path) {QImage nL(path); emit internalDelayedLoadComplete(nL);}
 
 };
 

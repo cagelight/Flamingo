@@ -5,6 +5,7 @@ Q_DECLARE_METATYPE(DrawSet)
 
 QImageView::QImageView(QWidget *parent, QImage image) : QWidget(parent), view(image), bilinearWorker(this) {
     qRegisterMetaType<DrawSet>("DrawSet");
+    QObject::connect(this, SIGNAL(internalDelayedLoadComplete(QImage)), this, SLOT(setImageInternal(QImage)));
     QObject::connect(&bilinearWorker, SIGNAL(done(DrawSet)), this, SLOT(handleBilinear(DrawSet)));
     mouseHider->setSingleShot(true);
     QObject::connect(mouseHider, SIGNAL(timeout()), this, SLOT(hideMouse()));
@@ -117,6 +118,10 @@ void QImageView::setImage(QString const & path, bool threadedLoad) {
     }
     else
         this->setImage(QImage(path));
+}
+
+void QImageView::setImageInternal(QImage newView) {
+    this->setImage(newView);
 }
 
 void QImageView::handleBilinear(DrawSet d) {
