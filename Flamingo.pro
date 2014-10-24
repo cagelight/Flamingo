@@ -1,5 +1,5 @@
 CONFIG += c++11
-CONFIG += Release
+CONFIG += Debug
 
 QT_VERSION = 5
 QT += core gui widgets

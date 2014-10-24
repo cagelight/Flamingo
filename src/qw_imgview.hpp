@@ -62,6 +62,7 @@ private:
 class QImageView : public QWidget {
     Q_OBJECT
 public:
+    enum ZKEEP {KEEP_NONE, KEEP_FIT, KEEP_FIT_FORCE, KEEP_EXPANDED, KEEP_EQUAL};
     QImageView(QWidget *parent = 0, QImage image = QImage(0, 0));
     QSize sizeHint() const;
     void paintEvent(QPaintEvent*);
@@ -71,13 +72,17 @@ public:
     void mouseReleaseEvent(QMouseEvent *);
     void mouseMoveEvent(QMouseEvent *);
     QImage getImage() {return view;}
+    ZKEEP getKeepState() {return keep;}
 signals:
-    void internalDelayedLoadComplete(QImage);
+    void internalDelayedLoadComplete(QImage, ZKEEP);
 public slots:
-    void setImage(const QImage&);
-    void setImage(QString const & path, bool threadedLoad = false);
+    void setImage(const QImage&, ZKEEP keepStart = KEEP_FIT);
+    void setImage(QString const & path, bool threadedLoad = false, ZKEEP keepStart = KEEP_FIT);
+    void setKeepState(ZKEEP z) {keep = z; this->repaint();}
+protected slots:
+    void centerView();
 private slots:
-    void setImageInternal(QImage);
+    void setImageInternal(QImage, ZKEEP keepStart);
     void handleBilinear(DrawSet);
     void hideMouse() {this->setCursor(Qt::BlankCursor);}
     void showMouse() {this->setCursor(Qt::ArrowCursor); mouseHider->start(500);}
@@ -85,9 +90,10 @@ private: //Variables
     QImage view;
     float zoom = 1.0f;
     QRect partRect;
-    float zoomMin = 0.025f;
+    static float constexpr zoomMin = 0.025f;
     float zoomMax = 0.0f;
-    bool keepFit = true;
+    float zoomExp = 0.0f;
+    ZKEEP keep;
     QPointF viewOffset = QPointF(0, 0);
     QPoint prevMPos;
     bool mouseMoving = false;
@@ -101,7 +107,7 @@ private: //Methods
     void setZoom(qreal, QPointF focus = QPointF(0, 0));
     void calculateMax();
     void calculateView();
-    void delayedLoad(QString const & path) {QImage nL(path); emit internalDelayedLoadComplete(nL);}
+    void delayedLoad(QString const & path, ZKEEP keepStart = KEEP_FIT) {QImage nL(path); emit internalDelayedLoadComplete(nL, keepStart);}
 
 };
 

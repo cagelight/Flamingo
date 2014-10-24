@@ -93,6 +93,6 @@ void QFlamingoView::handleQHLIStatus(QString str) {
 
 void QFlamingoView::flamSetImage(QImage img) {
     if (img != this->getImage()) {
-        this->setImage(img);
+        this->setImage(img, loadKeep);
     }
 }

@@ -6,14 +6,31 @@
 
 class QImageView;
 
+class QFlamingoLoadInformationData : public QFileInfoArgumentList {
+public:
+    QFlamingoLoadInformationData() : QFileInfoArgumentList() {}
+    QFlamingoLoadInformationData(QFileInfoArgumentList const & qfial) {
+        *((QFileInfoArgumentList *)this) = qfial;
+    }
+    void setSavePath(QString const & path) {savePath = path;}
+    void save(bool ignoreSavePath = false, bool setSavePathIfEmpty = true);
+    static QFlamingoLoadInformationData load(bool setSavePathToLoadPath = true);
+    static QFlamingoLoadInformationData load(QString const & path, bool setSavePathToLoadPath = true);
+    static bool fileIsFLID(QString const & file);
+    QString getSavePathName() {return savePath;}
+    QString getFileName() {return QFileInfo(savePath).fileName();}
+private:
+    QString savePath;
+};
+
 class QFlamingoArgManager : public QDialog {
     Q_OBJECT
 public:
-    QFlamingoArgManager(QFileInfoArgumentList, QWidget *parent = 0);
-    static QFileInfoArgumentList QFIALFromFLID(QString const & file);
-    static bool fileIsFLID(QString const & file);
+    QFlamingoArgManager(QFlamingoLoadInformationData, QWidget *parent = 0);
 signals:
     void updateFinalized(QFileInfoArgumentList);
+public slots:
+    void showWithNewArgs(QFlamingoLoadInformationData qfia);
 protected slots:
     void setupViews();
     void handleDirItemDoubleClicked(QTreeWidgetItem *, int);
@@ -25,9 +42,10 @@ protected slots:
     void finalizeUpdates();
     void discardUpdates();
     void saveToFile();
+    void saveToFileNew();
     void loadFromFile();
 protected:
-    void showEvent(QShowEvent * QSE) {argsPrev = args; this->setupViews(); QDialog::showEvent(QSE);}
+    void showEvent(QShowEvent *);
     void hideEvent(QHideEvent * QHE) {this->clear(); QDialog::hideEvent(QHE);}
     void closeEvent(QCloseEvent * QCE) {this->clear(); QDialog::closeEvent(QCE);}
     void dragEnterEvent(QDragEnterEvent* event);
@@ -60,8 +78,8 @@ private:
     QList<QArgDirTreeWidgetItem *> dirViewArgItems;
     QListWidget * argView = new QListWidget(this);
     QList<QListWidgetItem *> argViewItems;
-    QFileInfoArgumentList argsPrev;
-    QFileInfoArgumentList args;
+    QFlamingoLoadInformationData argsPrev;
+    QFlamingoLoadInformationData args;
     QUrl cDir;
     QList<QFileInfoArgument *> argsMarkedDelete;
     QMap<QFileInfoArgument *, QArgDirTreeWidgetItem *> dirViewArgMap;

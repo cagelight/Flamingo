@@ -1,11 +1,10 @@
 #include <QtGui>
 #include "qw_imgview.hpp"
 
-Q_DECLARE_METATYPE(DrawSet)
-
 QImageView::QImageView(QWidget *parent, QImage image) : QWidget(parent), view(image), bilinearWorker(this) {
     qRegisterMetaType<DrawSet>("DrawSet");
-    QObject::connect(this, SIGNAL(internalDelayedLoadComplete(QImage)), this, SLOT(setImageInternal(QImage)));
+    qRegisterMetaType<ZKEEP>("ZKEEP");
+    QObject::connect(this, SIGNAL(internalDelayedLoadComplete(QImage, ZKEEP)), this, SLOT(setImageInternal(QImage, ZKEEP)));
     QObject::connect(&bilinearWorker, SIGNAL(done(DrawSet)), this, SLOT(handleBilinear(DrawSet)));
     mouseHider->setSingleShot(true);
     QObject::connect(mouseHider, SIGNAL(timeout()), this, SLOT(hideMouse()));
@@ -13,7 +12,6 @@ QImageView::QImageView(QWidget *parent, QImage image) : QWidget(parent), view(im
 }
 
 QSize QImageView::sizeHint() const {
-    //return view.size().scaled(QSize(400, 300), Qt::KeepAspectRatioByExpanding);
     return view.size();
 }
 
@@ -25,8 +23,8 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
         QSize drawSize;
         if (paintCompletePartial) {
             drawSize = this->size();
-        } else if (partRect.width() < this->width() && partRect.height() < this->height() && (zoom >= 1.0f || zoom == zoomMax)) {
-            drawSize = partRect.size();
+        } else if ((partRect.width() < this->width() && partRect.height() < this->height()) && keep != KEEP_FIT_FORCE) {
+            drawSize = partRect.size() / zoom;
         } else {
             drawSize = partRect.size().scaled(this->size(), Qt::KeepAspectRatio);
         }
@@ -59,7 +57,8 @@ void QImageView::resizeEvent(QResizeEvent *QRE) {
 void QImageView::wheelEvent(QWheelEvent *QWE) {
     if (QWE->orientation() == Qt::Vertical) {
         QWE->accept();
-        this->setZoom((1.0f - QWE->delta() / 360.0f / 1.5f) * zoom, QPointF(QWE->pos().x() / (float)this->width() , QWE->pos().y() / (float)this->height()));
+        this->setZoom((1.0f - QWE->delta() / 360.0f / 3.0f) * zoom, QPointF(QWE->pos().x() / (float)this->width() , QWE->pos().y() / (float)this->height()));
+        this->repaint();
     }
     QWidget::wheelEvent(QWE);
 }
@@ -74,6 +73,7 @@ void QImageView::mousePressEvent(QMouseEvent *QME) {
     }
     if (QME->button() == Qt::MiddleButton) {
         this->setZoom(1.0f, QPointF(QME->pos().x() / (float)this->width() , QME->pos().y() / (float)this->height()));
+        this->repaint();
     }
     QWidget::mousePressEvent(QME);
 }
@@ -88,6 +88,7 @@ void QImageView::mouseReleaseEvent(QMouseEvent *QME) {
 void QImageView::mouseMoveEvent(QMouseEvent *QME) {
     this->showMouse();
     if (mouseMoving) {
+        if (keep == KEEP_EXPANDED || keep == KEEP_EQUAL) keep = KEEP_NONE;
         QPointF nPosAdj = ((QPointF)prevMPos - (QPointF)QME->pos()) * zoom;
         QPointF prevView = viewOffset;
         this->viewOffset.rx() += nPosAdj.x();
@@ -101,27 +102,27 @@ void QImageView::mouseMoveEvent(QMouseEvent *QME) {
     QWidget::mouseMoveEvent(QME);
 }
 
-void QImageView::setImage(const QImage &newView) {
+void QImageView::setImage(const QImage &newView, ZKEEP keepStart) {
     this->view = newView;
-    this->keepFit = true;
+    this->keep = keepStart;
     this->repaint();
 }
 
-void QImageView::setImage(QString const & path, bool threadedLoad) {
+void QImageView::setImage(QString const & path, bool threadedLoad, ZKEEP keepStart) {
     if (threadedLoad) {
         if (delayedLoader != nullptr) {
             if (delayedLoader->joinable()) delayedLoader->join();
             delete delayedLoader;
             delayedLoader = nullptr;
         }
-        delayedLoader = new std::thread(&QImageView::delayedLoad, this, path);
+        delayedLoader = new std::thread(&QImageView::delayedLoad, this, path, keepStart);
     }
     else
-        this->setImage(QImage(path));
+        this->setImage(QImage(path), keepStart);
 }
 
-void QImageView::setImageInternal(QImage newView) {
-    this->setImage(newView);
+void QImageView::setImageInternal(QImage newView, ZKEEP keepStart) {
+    this->setImage(newView, keepStart);
 }
 
 void QImageView::handleBilinear(DrawSet d) {
@@ -150,25 +151,66 @@ void QImageView::setZoom(qreal nZoom, QPointF focus) {
         this->viewOffset.rx() += xmod;
         this->viewOffset.ry() += ymod;
         zoom = nZoom;
-        keepFit = false;
-        this->repaint();
-    } else if (keepFit == false && zoom == nZoom && zoom != zoomMin) {
-        keepFit = true;
-        this->repaint();
+        keep = KEEP_NONE;
+    } else if (keep == KEEP_NONE && zoom == nZoom && zoom != zoomMin) {
+        keep = KEEP_FIT;
     }
+}
+
+void QImageView::centerView() {
+    QSize sizeZ = this->size() * zoomMax;
+    QSize sizeNZ = this->size();
+    QSize sizeZV = this->view.size();
+    if (sizeZV.width() > sizeZ.width()) {
+        sizeZV.setWidth(sizeZ.width());
+    }
+    if (sizeZV.height() > sizeZ.height()) {
+        sizeZV.setHeight(sizeZ.height());
+    }
+    float xmod = (sizeZV.width() - sizeNZ.width()) * 0.5f;
+    float ymod = (sizeZV.height() - sizeNZ.height()) * 0.5f;
+    this->viewOffset.setX(xmod);
+    this->viewOffset.setY(ymod);
 }
 
 void QImageView::calculateMax() {
     float xmax = view.width() / (float) this->width();
     float ymax = view.height() / (float) this->height();
-    zoomMax = xmax > ymax ? xmax : ymax;
+    if (xmax > ymax) {
+        zoomMax = xmax;
+        zoomExp = ymax;
+    } else {
+        zoomExp = xmax;
+        zoomMax = ymax;
+    }
+    if (zoomMax < 1.0f) zoomMax = 1.0f;
 }
 
 void QImageView::calculateView() {
     this->calculateMax();
-    if (keepFit) {
+    if (zoom == zoomMax && keep == KEEP_NONE) keep = KEEP_FIT;
+    switch (keep) {
+    case KEEP_NONE:
+        break;
+    case KEEP_FIT:
         zoom = zoomMax;
         this->viewOffset = QPointF(0, 0);
+        break;
+    case KEEP_FIT_FORCE:
+        zoom = zoomMax;
+        this->viewOffset = QPointF(0, 0);
+        break;
+    case KEEP_EXPANDED:
+    {
+        QSize mScr = this->size().scaled(this->view.size(), Qt::KeepAspectRatio);
+        this->viewOffset.setX((this->view.size().width() - mScr.width())/ 2.0f);
+        this->viewOffset.setY((this->view.size().height() - mScr.height())/ 2.0f);
+        zoom = zoomExp;
+    } break;
+    case KEEP_EQUAL:
+        this->zoom = 1.0f;
+        this->centerView();
+        break;
     }
     QSize partSize = this->size() * zoom;
     this->paintCompletePartial = true;
@@ -180,7 +222,6 @@ void QImageView::calculateView() {
         partSize.setHeight(view.height());
         this->paintCompletePartial = false;
     }
-    if (partSize == view.size()) keepFit = true;
     if (viewOffset.x() > this->view.width() - partSize.width()) {
         viewOffset.setX(this->view.width() - partSize.width());
     }

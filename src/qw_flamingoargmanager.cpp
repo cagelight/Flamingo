@@ -1,7 +1,99 @@
 #include "qw_flamingoargmanager.hpp"
 #include "qw_imgview.hpp"
 
-QFlamingoArgManager::QFlamingoArgManager(QFileInfoArgumentList qfial, QWidget *parent) : QDialog(parent), args(qfial) {
+void QFlamingoLoadInformationData::save(bool igSetFlag, bool setFlag) {
+    typedef struct {bool rec; QByteArray arry;} qfiapair;
+    QString path;
+    if (savePath.isEmpty() || igSetFlag) {
+        path = QFileDialog::getSaveFileName(0, QString(), QDir::currentPath(), QObject::tr("Flamingo Load Instruction Data (*.flid)"));
+        if (setFlag) this->setSavePath(path);
+    }
+    else path = savePath;
+#ifdef Q_OS_WIN32
+    if (!path.isEmpty() && !path.endsWith(".flid")) path.append(".flid");
+#endif
+    if (!path.isEmpty()) {
+        QList<qfiapair> wpaths;
+        for (QFileInfoArgument const & arg : *this)
+            wpaths.append({arg.isRecursive(), arg.canonicalFilePath().toLocal8Bit()});
+        int cc = 0;
+        for (qfiapair const & s : wpaths)
+            cc += s.arry.length();
+        cc += (sizeof(int) + sizeof(bool))*this->length();
+        cc += sizeof(int);
+        cc += 4;
+        char * bytes = new char[cc];
+        QByteArray wb(bytes, cc);
+        QDataStream writer(&wb, QIODevice::WriteOnly);
+        int ac = this->count();
+        writer.writeRawData("FLID", 4);
+        writer.writeRawData((const char*)&ac, sizeof(int));
+        for (qfiapair const & s : wpaths) {
+            writer.writeRawData((const char*)&s.rec, sizeof(bool));
+            int clen = s.arry.length();
+            writer.writeRawData((const char*)&clen, sizeof(int));
+            writer.writeRawData(s.arry.data(), clen);
+        }
+        QFile save(path);
+        save.open(QIODevice::WriteOnly);
+        save.write(wb);
+        save.close();
+        delete [] bytes;
+    }
+}
+
+QFlamingoLoadInformationData QFlamingoLoadInformationData::load(bool setFlag) {
+    QString path = QFileDialog::getOpenFileName(0, QString(), QDir::currentPath(), QObject::tr("Flamingo Load Instruction Data (*.flid)"));
+    return QFlamingoLoadInformationData::load(path, setFlag);
+}
+
+
+QFlamingoLoadInformationData QFlamingoLoadInformationData::load(QString const & path, bool setFlag) {
+    QFlamingoLoadInformationData qfial;
+    if (!path.isEmpty() && fileIsFLID(path)) {
+        QFile open(path);
+        open.open(QIODevice::ReadOnly);
+        QByteArray rb = open.readAll();
+        QDataStream reader(&rb, QIODevice::ReadOnly);
+        int ca = 0;
+        reader.skipRawData(4);
+        reader.readRawData((char*)&ca, sizeof(int));
+        for (int i = 0; i < ca; i++) {
+            bool rec;
+            int al;
+            reader.readRawData((char*)&rec, sizeof(bool));
+            reader.readRawData((char*)&al, sizeof(int));
+            char * ab = new char[al+1];
+            ab[al] = 0x00;
+            reader.readRawData(ab, al);
+            qfial.append(QFileInfoArgument(QString(ab), rec));
+            delete [] ab;
+        }
+    }
+    if (setFlag) qfial.setSavePath(path);
+    return qfial;
+}
+
+bool QFlamingoLoadInformationData::fileIsFLID(const QString &file) {
+    if (file.isEmpty()) return false;
+    QFile f(file);
+    if (!f.exists()) return false;
+    if (!f.open(QIODevice::ReadOnly)) return false;
+    char * t4 = new char[4];
+    if (f.read(t4, 4) != 4) {
+        delete [] t4;
+        return false;
+    }
+    if (t4[0] == 'F' && t4[1] == 'L' && t4[2] == 'I' && t4[3] == 'D') {
+        delete [] t4;
+        return true;
+    } else {
+        delete [] t4;
+        return false;
+    }
+}
+
+QFlamingoArgManager::QFlamingoArgManager(QFlamingoLoadInformationData qfial, QWidget *parent) : QDialog(parent), args(qfial) {
     this->setAcceptDrops(true);
     QWidget * viewWidget = new QWidget(this);
     QHBoxLayout * viewLayout = new QHBoxLayout(viewWidget);
@@ -34,9 +126,11 @@ QFlamingoArgManager::QFlamingoArgManager(QFileInfoArgumentList qfial, QWidget *p
     QPushButton * addFButton = new QPushButton("Add Files", buttonWidget);
     QPushButton * addDButton = new QPushButton("Add Directory", buttonWidget);
     QPushButton * SaveButton = new QPushButton("Save", buttonWidget);
+    QPushButton * SaveAsButton = new QPushButton("Save As", buttonWidget);
     QPushButton * LoadButton = new QPushButton("Load", buttonWidget);
     buttonWidget->layout()->addWidget(LoadButton);
     buttonWidget->layout()->addWidget(SaveButton);
+    buttonWidget->layout()->addWidget(SaveAsButton);
     buttonWidget->layout()->addWidget(addDButton);
     buttonWidget->layout()->addWidget(addFButton);
     buttonWidget->layout()->addWidget(closeButton);
@@ -52,9 +146,27 @@ QFlamingoArgManager::QFlamingoArgManager(QFileInfoArgumentList qfial, QWidget *p
     QObject::connect(addDButton, SIGNAL(released()), this, SLOT(addNewArgDir()));
     QObject::connect(LoadButton, SIGNAL(released()), this, SLOT(loadFromFile()));
     QObject::connect(SaveButton, SIGNAL(released()), this, SLOT(saveToFile()));
+    QObject::connect(SaveAsButton, SIGNAL(released()), this, SLOT(saveToFileNew()));
     dirView->setHeaderHidden(true);
     dirView->setSelectionMode(QAbstractItemView::MultiSelection);
     this->setupViews();
+}
+
+void QFlamingoArgManager::showWithNewArgs(QFlamingoLoadInformationData qfia) {
+    if (this->isVisible()) {
+        QMessageBox::StandardButton b = QMessageBox::warning(this, "Overwrite Current Settings?", "Current load order will be overwritten.", QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Cancel);
+        if (b != QMessageBox::Ok) return;
+        this->close();
+    }
+    this->show();
+    this->args = qfia;
+    this->setupViews();
+}
+
+void QFlamingoArgManager::showEvent(QShowEvent *QSE) {
+    argsPrev = args;
+    this->setupViews();
+    QDialog::showEvent(QSE);
 }
 
 void QFlamingoArgManager::dragEnterEvent(QDragEnterEvent* QDEE) {
@@ -236,6 +348,8 @@ void QFlamingoArgManager::setupViews() {
         }
     }
     dirView->expandAll();
+
+    this->setWindowTitle(QString("Flamingo Load Manager: ") + args.getFileName());
 }
 
 void QFlamingoArgManager::clear() {
@@ -246,6 +360,7 @@ void QFlamingoArgManager::clear() {
     qDeleteAll(dirViewTopItems);
     dirViewTopItems.clear();
     dirViewArgItems.clear();
+    iView->setImage(QImage());
 }
 
 void QFlamingoArgManager::handleDirItemDoubleClicked(QTreeWidgetItem * pitem, int) {
@@ -414,91 +529,20 @@ QIcon QFlamingoArgManager::getQFIAIcon(QFileInfoArgument & arg) {
 }
 
 void QFlamingoArgManager::saveToFile() {
-    typedef struct {bool rec; QByteArray arry;} qfiapair;
-    QString path = QFileDialog::getSaveFileName(this, QString(), QDir::currentPath(), tr("Flamingo Load Instruction Data (*.flid)"));
-#ifdef Q_OS_WIN32
-    if (!path.endsWith(".flid")) path.append(".flid");
-#endif
-    if (!path.isEmpty()) {
-        QList<qfiapair> wpaths;
-        for (QFileInfoArgument const & arg : args)
-            wpaths.append({arg.isRecursive(), arg.canonicalFilePath().toLocal8Bit()});
-        int cc = 0;
-        for (qfiapair const & s : wpaths)
-            cc += s.arry.length();
-        cc += (sizeof(int) + sizeof(bool))*args.length();
-        cc += sizeof(int);
-        cc += 4;
-        char * bytes = new char[cc];
-        QByteArray wb(bytes, cc);
-        QDataStream writer(&wb, QIODevice::WriteOnly);
-        int ac = args.count();
-        writer.writeRawData("FLID", 4);
-        writer.writeRawData((const char*)&ac, sizeof(int));
-        for (qfiapair const & s : wpaths) {
-            writer.writeRawData((const char*)&s.rec, sizeof(bool));
-            int clen = s.arry.length();
-            writer.writeRawData((const char*)&clen, sizeof(int));
-            writer.writeRawData(s.arry.data(), clen);
-        }
-        QFile save(path);
-        save.open(QIODevice::WriteOnly);
-        save.write(wb);
-        save.close();
-        delete [] bytes;
-    }
+    this->args.save(false, true);
+    this->setupViews();
+}
+
+void QFlamingoArgManager::saveToFileNew() {
+    this->args.save(true, true);
+    this->setupViews();
 }
 
 void QFlamingoArgManager::loadFromFile() {
-    QString path = QFileDialog::getOpenFileName(this, QString(), QDir::currentPath(), tr("Flamingo Load Instruction Data (*.flid)"));
-    QFileInfoArgumentList qfial = QFlamingoArgManager::QFIALFromFLID(path);
+    QFlamingoLoadInformationData qfial = QFlamingoLoadInformationData::load(true);
     if (!qfial.isEmpty()) {
         args.clear();
-        args.append(qfial);
+        args = qfial;
         this->setupViews();
-    }
-}
-
-QFileInfoArgumentList QFlamingoArgManager::QFIALFromFLID(const QString &file) {
-    QFileInfoArgumentList qfial;
-    if (!file.isEmpty()) {
-        QFile open(file);
-        open.open(QIODevice::ReadOnly);
-        QByteArray rb = open.readAll();
-        QDataStream reader(&rb, QIODevice::ReadOnly);
-        int ca = 0;
-        reader.skipRawData(4);
-        reader.readRawData((char*)&ca, sizeof(int));
-        for (int i = 0; i < ca; i++) {
-            bool rec;
-            int al;
-            reader.readRawData((char*)&rec, sizeof(bool));
-            reader.readRawData((char*)&al, sizeof(int));
-            char * ab = new char[al+1];
-            ab[al] = 0x00;
-            reader.readRawData(ab, al);
-            qfial.append(QFileInfoArgument(QString(ab), rec));
-            delete [] ab;
-        }
-    }
-    return qfial;
-}
-
-bool QFlamingoArgManager::fileIsFLID(const QString &file) {
-    if (file.isEmpty()) return false;
-    QFile f(file);
-    if (!f.exists()) return false;
-    if (!f.open(QIODevice::ReadOnly)) return false;
-    char * t4 = new char[4];
-    if (f.read(t4, 4) != 4) {
-        delete [] t4;
-        return false;
-    }
-    if (t4[0] == 'F' && t4[1] == 'L' && t4[2] == 'I' && t4[3] == 'D') {
-        delete [] t4;
-        return true;
-    } else {
-        delete [] t4;
-        return false;
     }
 }

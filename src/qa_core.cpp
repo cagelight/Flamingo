@@ -6,8 +6,8 @@
 
 FlamingoCore::FlamingoCore(int &argc, char **&argv): QApplication(argc, argv) {
     if (argc > 1) {
-        if (argc == 2 && QFlamingoArgManager::fileIsFLID(QString(argv[1])))
-                windowMain = new FlamingoMainWindow(QFlamingoArgManager::QFIALFromFLID(QString(argv[1])));
+        if (argc == 2 && QFlamingoLoadInformationData::fileIsFLID(QString(argv[1])))
+                windowMain = new FlamingoMainWindow(QFlamingoLoadInformationData::load(QString(argv[1]), true));
         else {
             QFileInfoArgumentList qfil;
             QList<char> allOpt;
@@ -47,5 +47,6 @@ FlamingoCore::FlamingoCore(int &argc, char **&argv): QApplication(argc, argv) {
     } else {
         windowMain = new FlamingoMainWindow(QFileInfoArgumentList({QFileInfoArgument(QDir::currentPath(), false)}));
     };
+    windowMain->setAttribute(Qt::WA_DeleteOnClose);
     QObject::connect(windowMain, SIGNAL(closed()), this, SLOT(quit()));
 }
