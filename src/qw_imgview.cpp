@@ -23,7 +23,7 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
         QSize drawSize;
         if (paintCompletePartial) {
             drawSize = this->size();
-        } else if ((partRect.width() < this->width() && partRect.height() < this->height()) && keep != KEEP_FIT_FORCE) {
+        } else if ((partRect.width() < this->width() && partRect.height() < this->height())) {
             drawSize = partRect.size() / zoom;
         } else {
             drawSize = partRect.size().scaled(this->size(), Qt::KeepAspectRatio);
@@ -50,7 +50,7 @@ void QImageView::paintEvent(QPaintEvent *QPE) {
 }
 
 void QImageView::resizeEvent(QResizeEvent *QRE) {
-    this->calculateMax();
+    this->calculateZoomLevels();
     QWidget::resizeEvent(QRE);
 }
 
@@ -173,7 +173,7 @@ void QImageView::centerView() {
     this->viewOffset.setY(ymod);
 }
 
-void QImageView::calculateMax() {
+void QImageView::calculateZoomLevels() {
     float xmax = view.width() / (float) this->width();
     float ymax = view.height() / (float) this->height();
     if (xmax > ymax) {
@@ -183,11 +183,12 @@ void QImageView::calculateMax() {
         zoomExp = xmax;
         zoomMax = ymax;
     }
+    zoomFit = zoomMax;
     if (zoomMax < 1.0f) zoomMax = 1.0f;
 }
 
 void QImageView::calculateView() {
-    this->calculateMax();
+    this->calculateZoomLevels();
     if (zoom == zoomMax && keep == KEEP_NONE) keep = KEEP_FIT;
     switch (keep) {
     case KEEP_NONE:
@@ -197,7 +198,7 @@ void QImageView::calculateView() {
         this->viewOffset = QPointF(0, 0);
         break;
     case KEEP_FIT_FORCE:
-        zoom = zoomMax;
+        zoom = zoomFit;
         this->viewOffset = QPointF(0, 0);
         break;
     case KEEP_EXPANDED:

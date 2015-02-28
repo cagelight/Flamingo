@@ -93,6 +93,7 @@ private: //Variables
     static float constexpr zoomMin = 0.025f;
     float zoomMax = 0.0f;
     float zoomExp = 0.0f;
+    float zoomFit = 0.0f;
     ZKEEP keep;
     QPointF viewOffset = QPointF(0, 0);
     QPoint prevMPos;
@@ -105,7 +106,7 @@ private: //Variables
     std::thread * delayedLoader = nullptr;
 private: //Methods
     void setZoom(qreal, QPointF focus = QPointF(0, 0));
-    void calculateMax();
+    void calculateZoomLevels();
     void calculateView();
     void delayedLoad(QString const & path, ZKEEP keepStart = KEEP_FIT) {QImage nL(path); emit internalDelayedLoadComplete(nL, keepStart);}
 

@@ -12,7 +12,8 @@ QFlamingoView::QFlamingoView(QWidget *parent) : QImageView(parent) {
 }
 
 void QFlamingoView::processArgumentList(QFileInfoArgumentList fi) {
-    QtConcurrent::run(this, &QFlamingoView::internalProcessArgs, fi);
+    //QtConcurrent::run(this, &QFlamingoView::internalProcessArgs, fi);
+    this->internalProcessArgs(fi);
 }
 
 void QFlamingoView::internalProcessArgs(QFileInfoArgumentList fi) {
