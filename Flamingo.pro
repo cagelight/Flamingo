@@ -14,7 +14,8 @@ SOURCES += \
     src/qw_imgview.cpp \
     src/qw_flamingoview.cpp \
     src/qo_hotloadimage.cpp \
-    src/qw_flamingoargmanager.cpp
+    src/qw_flamingoargmanager.cpp \
+    src/sequentialrandomprovider.cpp
 
 HEADERS  += \
     src/qw_mainwindow.hpp \
@@ -24,7 +25,8 @@ HEADERS  += \
     src/qreversiblelistiterator.hpp \
     src/qo_hotloadimage.hpp \
     src/qfileinfoargument.hpp \
-    src/qw_flamingoargmanager.hpp
+    src/qw_flamingoargmanager.hpp \
+    src/sequentialrandomprovider.hpp
 
 RESOURCES += \
     resource/icons.qrc

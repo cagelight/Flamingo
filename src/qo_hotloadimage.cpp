@@ -83,7 +83,7 @@ void QImageLoadThreadPool::internalJoinThread(QString path) {
 
 ///--------------------------------------------///
 
-QHotLoadImageBay::QHotLoadImageBay() : QObject(), lastDirection(D_NEUTRAL) {
+QHotLoadImageBay::QHotLoadImageBay() : QObject(), dirHint(D_NEUTRAL) {
     qsrand(time(0));
     QObject::connect(&qiltp, SIGNAL(loadSuccess(QString,QImage)), this, SLOT(handleSuccess(QString,QImage)), Qt::DirectConnection);
     QObject::connect(&qiltp, SIGNAL(loadFailed(QString)), this, SLOT(handleFailure(QString)), Qt::DirectConnection);
@@ -95,10 +95,28 @@ void QHotLoadImageBay::timerEvent(QTimerEvent *) {
         const int length = imgList.length();
         if (length > 0) {
             QList<int> nindicies;
-            nindicies.prepend(this->internalGetPreviousIndex(1));
-            nindicies.prepend(this->internalGetNextIndex(1));
-            nindicies.prepend(this->internalGetPreviousIndex(0));
-            nindicies.prepend(this->internalGetNextIndex(0));
+            switch(this->dirHint) {
+            case D_NEUTRAL:
+            case D_NEXT:
+                nindicies.prepend(this->internalGetPreviousIndex(1));
+                nindicies.prepend(this->internalGetNextIndex(1));
+                nindicies.prepend(this->internalGetPreviousIndex(0));
+                nindicies.prepend(this->internalGetNextIndex(0));
+                break;
+            case D_PREV:
+                nindicies.prepend(this->internalGetNextIndex(1));
+                nindicies.prepend(this->internalGetPreviousIndex(1));
+                nindicies.prepend(this->internalGetNextIndex(0));
+                nindicies.prepend(this->internalGetPreviousIndex(0));
+                break;
+            case D_RANDOM:
+                nindicies.prepend(this->srp.NextPeek(4));
+                nindicies.prepend(this->srp.NextPeek(3));
+                nindicies.prepend(this->srp.NextPeek(2));
+                nindicies.prepend(this->srp.NextPeek(1));
+                nindicies.prepend(this->srp.NextPeek(0));
+                break;
+            }
             nindicies.prepend(index);
             QListIterator<int> iter(nindicies);
             for (int i = 0; i < imgList.length(); i++) {
@@ -145,6 +163,7 @@ void QHotLoadImageBay::timerEvent(QTimerEvent *) {
 }
 
 void QHotLoadImageBay::add(QFileInfo info) {
+    srpActive = false;
     this->imgList.append(std::make_tuple(QImage(), info, false));
     if (imgList.length() == 1) emit imageChanged(std::get<1>(imgList.at(0)).fileName());
 }
@@ -157,7 +176,7 @@ QImage QHotLoadImageBay::current() {
         if (loaded) {
             if (img.isNull()) {
                 this->remove(index);
-                if (lastDirection == D_PREV) this->internalPrevious();
+                if (dirHint == D_PREV) this->internalPrevious();
                 return current();
             } else {
                 emit activeStatusUpdate(info.fileName() + QString(" loaded."));
@@ -174,19 +193,19 @@ QImage QHotLoadImageBay::current() {
 
 QImage QHotLoadImageBay::next() {
     internalNext();
-    this->lastDirection.store(D_NEXT);
+    this->dirHint.store(D_NEXT);
     return current();
 }
 
 QImage QHotLoadImageBay::previous() {
     internalPrevious();
-    this->lastDirection.store(D_PREV);
+    this->dirHint.store(D_PREV);
     return current();
 }
 
 QImage QHotLoadImageBay::random() {
     internalRandom();
-    this->lastDirection.store(D_NEUTRAL);
+    this->dirHint.store(D_RANDOM);
     return current();
 }
 
@@ -265,18 +284,20 @@ void QHotLoadImageBay::unload(int i) {
 }
 
 void QHotLoadImageBay::remove(int i) {
+    srpActive = false;
     imgList.removeAt(i);
     this->internalSettleIndex();
 }
 
 void QHotLoadImageBay::clear() {
-     bool p = activationState;
-     activationState = false;
-     qiltp.joinAll();
-     this->unloadAll();
-     index = 0;
-     imgList.clear();
-     activationState = p;
+    srpActive = false;
+    bool p = activationState;
+    activationState = false;
+    qiltp.joinAll();
+    this->unloadAll();
+    index = 0;
+    imgList.clear();
+    activationState = p;
 }
 
 void QHotLoadImageBay::unloadAll() {

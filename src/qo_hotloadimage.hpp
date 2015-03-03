@@ -12,6 +12,7 @@
 #include <QFileInfo>
 #include <QThread>
 
+#include "sequentialrandomprovider.hpp"
 
 typedef std::pair<QString, std::thread*> LoadThread;
 
@@ -69,9 +70,11 @@ private slots:
     void handleSuccess(QString, QImage);
     void handleFailure(QString);
 private:
-    enum Direction {D_PREV, D_NEXT, D_NEUTRAL};
-    std::atomic<Direction> lastDirection;
+    enum Direction {D_PREV, D_NEXT, D_NEUTRAL, D_RANDOM};
+    std::atomic<Direction> dirHint;
     QList<QFileImage> imgList;
+    SequentialRandomProvider srp {5, 1};
+    bool srpActive = false;
     int internalGetNextIndex(int jump = 0) {
         if (imgList.length() > 0) {
             int nindex = index + (1 + jump);
@@ -100,7 +103,11 @@ private:
     }
     void internalRandom() {
         if (imgList.length() > 0) {
-            index = qrand() % imgList.length();
+            if (!srpActive) {
+                srp.Reset(this->imgList.length());
+                srpActive = true;
+            }
+            index = srp.Next();
             emit imageChanged(std::get<1>(imgList.at(index)).fileName());
         }
     }
