@@ -67,6 +67,9 @@ FlamingoMainWindow::FlamingoMainWindow(QFlamingoLoadInformationData infos) {
     QAction * navigationRand = navigationMenu->addAction("Random");
     navigationRand->setShortcut(keyNavigationRand);
     QObject::connect(navigationRand, SIGNAL(triggered()), this, SLOT(random()));
+    QAction * navigationRandB = navigationMenu->addAction("Random Back");
+    navigationRandB->setShortcut(keyNavigationRandB);
+    QObject::connect(navigationRandB, SIGNAL(triggered()), this, SLOT(randomb()));
 
     QMenu * slideshowMenu = menu->addMenu("&Slideshow");
     slideshowStartAction = slideshowMenu->addAction("Start");
@@ -143,6 +146,7 @@ void FlamingoMainWindow::wheelEvent(QWheelEvent * QWE) {
 
 void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
     if (istatbar->isHidden()) {
+        qDebug() << QKE->key();
         switch (QKE->key()) {
         case Qt::Key_Escape:
         case Qt::Key_H:
@@ -156,6 +160,9 @@ void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
             break;
         case keyNavigationRand:
             this->random();
+            break;
+        case keyNavigationRandB:
+            this->randomb();
             break;
         }
     }
@@ -235,6 +242,11 @@ void FlamingoMainWindow::previous() {
 void FlamingoMainWindow::random() {
     this->stopSlideshow();
     fview->Rand();
+}
+
+void FlamingoMainWindow::randomb() {
+    this->stopSlideshow();
+    fview->RandBack();
 }
 
 void FlamingoMainWindow::toggleHidden() {

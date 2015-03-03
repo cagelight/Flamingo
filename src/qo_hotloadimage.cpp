@@ -209,6 +209,12 @@ QImage QHotLoadImageBay::random() {
     return current();
 }
 
+QImage QHotLoadImageBay::randomb() {
+    internalRandomBack();
+    this->dirHint.store(D_RANDOM);
+    return current();
+}
+
 QImage QHotLoadImageBay::skipTo(QFileInfo fi) {
     for (int i = 0; i < imgList.length(); i++) {
         const QFileInfo &lfi = std::get<1>(imgList.at(i));

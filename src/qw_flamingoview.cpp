@@ -88,6 +88,11 @@ void QFlamingoView::Rand() {
     if (!img.isNull()) this->flamSetImage(img);
 }
 
+void QFlamingoView::RandBack() {
+    QImage img = qhlib.randomb();
+    if (!img.isNull()) this->flamSetImage(img);
+}
+
 void QFlamingoView::handleQHLIStatus(QString str) {
     emit statusUpdate(str);
 }

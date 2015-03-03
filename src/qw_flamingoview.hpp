@@ -28,6 +28,7 @@ public slots:
     void Next();
     void Prev();
     void Rand();
+    void RandBack();
     void setKeepNone() {setKeepState(KEEP_NONE);}
     void setKeepFit() {setKeepState(KEEP_FIT);}
     void setKeepFitForce() {setKeepState(KEEP_FIT_FORCE);}

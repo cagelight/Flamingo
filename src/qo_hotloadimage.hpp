@@ -57,6 +57,7 @@ public:
     QImage next();
     QImage previous();
     QImage random();
+    QImage randomb();
     QImage skipTo(QFileInfo);
 signals:
     void imageChanged(QString);
@@ -108,6 +109,16 @@ private:
                 srpActive = true;
             }
             index = srp.Next();
+            emit imageChanged(std::get<1>(imgList.at(index)).fileName());
+        }
+    }
+    void internalRandomBack() {
+        if (imgList.length() > 0) {
+            if (!srpActive) {
+                srp.Reset(this->imgList.length());
+                srpActive = true;
+            }
+            index = srp.Previous();
             emit imageChanged(std::get<1>(imgList.at(index)).fileName());
         }
     }

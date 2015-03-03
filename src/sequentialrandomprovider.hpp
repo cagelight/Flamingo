@@ -2,6 +2,7 @@
 #define SEQUENTIALRANDOMPROVIDER_HPP
 
 #include <QQueue>
+#include <QVector>
 
 class SequentialRandomProvider : protected QQueue<int> {
 public:
@@ -10,7 +11,9 @@ public:
     void Reset(int maxValue);
     int Next();
     int NextPeek(int skip);
+    int Previous();
 protected:
+    QVector<int> rev;
     int keepSize, maxValue;
     void EnqueueNew();
 };

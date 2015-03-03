@@ -32,6 +32,7 @@ private slots:
     void next();
     void previous();
     void random();
+    void randomb();
     void toggleHidden();
     void toggleFullscreen(bool);
     void toggleBorder(bool);
@@ -67,6 +68,7 @@ private: //Key Sequences
     static constexpr Qt::Key keyNavigationNext = Qt::Key_Right;
     static constexpr Qt::Key keyNavigationPrev = Qt::Key_Left;
     static constexpr Qt::Key keyNavigationRand = Qt::Key_Up;
+    static constexpr Qt::Key keyNavigationRandB = Qt::Key_Down;
 };
 
 #endif // QWIDGET_MAINWINDOW_HPP
