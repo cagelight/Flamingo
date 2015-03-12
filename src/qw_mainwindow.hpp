@@ -5,6 +5,7 @@
 #include "qw_flamingoargmanager.hpp"
 #include <QtWidgets>
 #include <QFileInfo>
+#include <atomic>
 
 class QFlamingoView;
 class QFlamingoArgManager;
@@ -65,6 +66,8 @@ private: //Widgets
     QRadioButton * viewLoadKeepEquals = new QRadioButton("1:1 Center", viewLoadKeepDialog);
     //Arg
     QFlamingoArgManager * argManager = nullptr;
+	//
+	std::atomic_bool delmode {false};
 private: //Key Sequences
     static constexpr Qt::Key keyNavigationNext = Qt::Key_Right;
     static constexpr Qt::Key keyNavigationPrev = Qt::Key_Left;

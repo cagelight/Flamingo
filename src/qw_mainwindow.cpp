@@ -287,6 +287,7 @@ void FlamingoMainWindow::toggleBorder(bool flag) {
 }
 
 void FlamingoMainWindow::slideshowNext() {
+	if (delmode) return;
     if (slideRandAction->isChecked()) {
         fview->Rand();
     } else {
@@ -324,7 +325,9 @@ void FlamingoMainWindow::showViewLoadDialog() {
 }
 
 void FlamingoMainWindow::deleteCurrent() {
+	delmode.store(true);
 	if (QMessageBox::warning(this, "Delete", QString("You are about to delete this image. It will be permenantly deleted (not moved to a recycle bin.)"), QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok) {
 		fview->deleteCurrent();
 	}
+	delmode.store(false);
 }
