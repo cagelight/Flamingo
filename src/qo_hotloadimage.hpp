@@ -59,6 +59,7 @@ public:
     QImage random();
     QImage randomb();
     QImage skipTo(QFileInfo);
+	void deleteCurrent();
 signals:
     void imageChanged(QString);
     void activeLoaded(QImage);

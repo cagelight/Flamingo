@@ -21,6 +21,7 @@ public: //Methods
     void clear() {qhlib.clear();}
     void abortLoad() {abort = true;} //Does nothing if arguments are not being processed.
     ZKEEP getLoadKeepState() {return loadKeep;}
+	void deleteCurrent() {qhlib.deleteCurrent(); QImage img = qhlib.current(); if (!img.isNull()) this->flamSetImage(img);}
 signals:
     void statusUpdate(QString);
     void imageChanged(QString);

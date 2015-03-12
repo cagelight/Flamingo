@@ -39,6 +39,7 @@ private slots:
     void slideshowNext();
     void reloadArguments(QFileInfoArgumentList);
     void showViewLoadDialog();
+	void deleteCurrent();
 private:
     QSettings appSettings {QSettings::UserScope, "Sensory Systems", "Flamingo", this};
 private: //Widgets

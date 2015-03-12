@@ -228,6 +228,13 @@ QImage QHotLoadImageBay::skipTo(QFileInfo fi) {
     return current();
 }
 
+void QHotLoadImageBay::deleteCurrent() {
+	QFileInfo &info = std::get<1>(imgList[index]);
+	QFile::remove(info.canonicalFilePath());
+	this->remove(index);
+	this->srpActive = false;
+}
+
 void QHotLoadImageBay::Activate() {
     activationState = true;
 }

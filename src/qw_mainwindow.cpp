@@ -30,6 +30,9 @@ FlamingoMainWindow::FlamingoMainWindow(QFlamingoLoadInformationData infos) {
     QObject::connect(closeAction, SIGNAL(triggered()), this, SLOT(close()));
     fileArgAction = fileMenu->addAction("Load Manager");
     fileArgAction->setShortcut(Qt::Key_M);
+	QAction * deleteAction = fileMenu->addAction("Delete");
+	deleteAction->setShortcut(Qt::Key_Delete);
+	QObject::connect(deleteAction, SIGNAL(triggered()), this, SLOT(deleteCurrent()));
 
     QMenu * mwindowmenu = menu->addMenu("&Window");
     QAction * mwindowHide = mwindowmenu->addAction("Hide");
@@ -164,6 +167,9 @@ void FlamingoMainWindow::keyPressEvent(QKeyEvent *QKE) {
         case keyNavigationRandB:
             this->randomb();
             break;
+		case Qt::Key_Delete:
+			this->deleteCurrent();
+			break;
         }
     }
 }
@@ -315,4 +321,10 @@ void FlamingoMainWindow::showViewLoadDialog() {
         viewLoadKeepEquals->setChecked(false);
         break;
     }
+}
+
+void FlamingoMainWindow::deleteCurrent() {
+	if (QMessageBox::warning(this, "Delete", QString("You are about to delete this image. It will be permenantly deleted (not moved to a recycle bin.)"), QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok) {
+		fview->deleteCurrent();
+	}
 }
